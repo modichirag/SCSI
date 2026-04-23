@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+.Python
+build/
+dist/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Virtualenv
+venv/
+.venv/
+env/
+.env
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Dataset caches and training outputs (set via $SCSI_DATA / $SCSI_RESULTS)
+data/
+results/
+
+# Local reversible deletions (internal refactor scratch)
+.trash/
+
+# Secrets / local overrides
+.claude/
+
+# Cluster job scripts (contain user-specific paths)
+job-*.sh
+
+# Notebooks (contain user-specific paths and cached outputs)
+notebooks/

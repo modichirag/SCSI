@@ -1,0 +1,22 @@
+torch
+torchvision
+numpy
+matplotlib
+tqdm
+einops
+pillow
+
+# Training utilities
+ema-pytorch
+transformers
+
+# Synthetic 2-D datasets
+scikit-learn
+
+# QSO spectra download
+astropy
+
+# FID / perceptual / image metrics (eval drivers only)
+pytorch-fid
+lpips
+torchmetrics
