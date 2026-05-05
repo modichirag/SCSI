@@ -103,12 +103,12 @@ psnr = PeakSignalNoiseRatio(data_range=1.0, dim=[1, 2, 3], reduction=None).to(de
 ssim = StructuralSimilarityIndexMeasure(data_range=1.0, reduction=None).to(device)
 
 @torch.inference_mode()
-def get_cleaned_samples():
+def get_restored_samples():
     image = next(dl).to(device)
     corrupted, latents = interpolant.push_fwd(image, return_latents=True)
     latents = latents if use_latents else None
-    clean = interpolant.transport(b, corrupted, latents)
-    return image, clean
+    restored = interpolant.transport(b, corrupted, latents)
+    return image, restored
 
 
 
@@ -116,16 +116,16 @@ batches = num_to_groups(args.n_samples, args.batch_size)
 loss_alex, loss_vgg = [], []
 psnr_list, ssim_list = [], []
 for batch in tqdm(batches):
-    images, cleaned_images = get_cleaned_samples()    
+    images, restored_images = get_restored_samples()
     with torch.no_grad():
         img1 = torch.clip(cifar10_inverse_transforms(images)*2-1, -1, 1)
-        img2 = torch.clip(cifar10_inverse_transforms(cleaned_images)*2-1, -1, 1)
+        img2 = torch.clip(cifar10_inverse_transforms(restored_images)*2-1, -1, 1)
         l1 = (loss_fn_alex(img1.to('cpu'), img2.to('cpu')).detach()).numpy()
         l2 = (loss_fn_vgg(img1.to('cpu'), img2.to('cpu')).detach()).numpy()
         loss_alex.append(l1)
         loss_vgg.append(l2)
         target = torch.clip(cifar10_inverse_transforms(images), 0, 1)
-        preds = torch.clip(cifar10_inverse_transforms(cleaned_images), 0, 1)
+        preds = torch.clip(cifar10_inverse_transforms(restored_images), 0, 1)
         psnr_value = psnr(preds, target).to('cpu').numpy()
         ssim_value = ssim(preds, target).to('cpu').numpy()  
         psnr_list.append(psnr_value)

@@ -81,7 +81,7 @@ if args.prefix != "": folder = f"{args.prefix}-{folder}"
 if args.suffix != "": folder = f"{folder}-{args.suffix}"
 if args.subfolder != "": folder = f"{folder}/{args.subfolder}/"
 folder = f"{BASEPATH}/{folder}/"
-results_folder = f"{folder}/cleaned_{args.model}/"
+results_folder = f"{folder}/restored_{args.model}/"
 os.makedirs(results_folder, exist_ok=True)
 print(f"Models will be loaded from folder: {folder}")
 
@@ -169,26 +169,26 @@ if s is None:
 
 
 @torch.inference_mode()
-def get_cleaned_samples(image):
+def get_restored_samples(image):
     corrupted, latents = interpolant.push_fwd(image, return_latents=True)
     latents = latents if use_latents else None
-    clean = interpolant.transport(b, corrupted, latents)
-    return clean
+    restored = interpolant.transport(b, corrupted, latents)
+    return restored
 
 
 x = []
 i = 0
 for _, image in enumerate(dl):
-    clean = get_cleaned_samples(image.to(device))
-    x.append(clean.cpu())
+    restored = get_restored_samples(image.to(device))
+    x.append(restored.cpu())
     i += 1
-    if (i % 10) == 0: 
+    if (i % 10) == 0:
         x = np.concatenate(x, axis=0)
         print(f"Processed {i} batches", x.shape)
-        np.save(f"{results_folder}/cleaned_{i//10}.npy", x)
+        np.save(f"{results_folder}/restored_{i//10}.npy", x)
         x = []
 x = np.concatenate(x, axis=0)
 print(f"Processed {i} batches", x.shape)
-np.save(f"{results_folder}/cleaned_{i//10+1}.npy", x)
+np.save(f"{results_folder}/restored_{i//10+1}.npy", x)
 
 

@@ -166,19 +166,19 @@ if not fid_scorer.dataset_stats_loaded:
     fid_scorer.load_or_precalc_dataset_stats(force_calc=True)
 
 @torch.inference_mode()
-def get_cleaned_samples():
+def get_restored_samples():
     image = next(dl).to(device)
     corrupted, latents = interpolant.push_fwd(image, return_latents=True)
     latents = latents if use_latents else None
-    clean = interpolant.transport(b, corrupted, latents, s=s)
-    return clean
+    restored = interpolant.transport(b, corrupted, latents, s=s)
+    return restored
 
 batches = num_to_groups(fid_scorer.n_samples, fid_scorer.batch_size)
 stacked_fake_features = []
 print(f"Stacking Inception features for {fid_scorer.n_samples} generated samples.")
 
 for batch in tqdm(batches):
-    fake_samples = get_cleaned_samples()    
+    fake_samples = get_restored_samples()
     fake_features = fid_scorer.calculate_inception_features(fake_samples)
     stacked_fake_features.append(fake_features)
 stacked_fake_features = torch.cat(stacked_fake_features, dim=0).cpu().numpy()

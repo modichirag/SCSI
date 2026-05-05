@@ -19,15 +19,15 @@ def get_samples(b, interpolant, dataloader, device, validation_data, s=None):
     else:
         data, obs = push_to_device(data, obs, device=device)
         latents = None
-    clean = interpolant.transport(b, obs, latents, s=s)
-    return data, obs, latents, clean
+    restored = interpolant.transport(b, obs, latents, s=s)
+    return data, obs, latents, restored
 
 
 
 def save_image(idx, b, interpolant, dataloader, device, results_folder, losses, validation_data, s=None, **kargs):
 
-    data, obs, latents, clean = get_samples(b, interpolant, dataloader, device, validation_data, s=s)
-    to_show = [data, obs, clean]
+    data, obs, latents, restored = get_samples(b, interpolant, dataloader, device, validation_data, s=s)
+    to_show = [data, obs, restored]
 
     fig, axar = plt.subplots(len(to_show), 8, figsize=(8, 3), sharex=True, sharey=True)
     vmax, vmin = data.max()*1.1, data.min()*0.5
@@ -37,7 +37,7 @@ def save_image(idx, b, interpolant, dataloader, device, results_folder, losses, 
             im = ax.imshow(grab(to_show[i][j]).transpose(1, 2, 0), vmax=vmax, vmin=vmin)
     axar[0, 0].set_ylabel('Original')
     axar[1, 0].set_ylabel(f'Corrupted')
-    axar[2, 0].set_ylabel(f'Clean')
+    axar[2, 0].set_ylabel(f'Restored')
     for axis in axar.flatten():
         axis.set_xticks([])
         axis.set_yticks([])
@@ -47,14 +47,14 @@ def save_image(idx, b, interpolant, dataloader, device, results_folder, losses, 
 
 
 def save_fig_2dsynt_vec(idx, b, interpolant, dataloader, device, results_folder, losses, validation_data, s=None, **kargs):
-    clean, corrupted, latents, generated = get_samples(b, interpolant, dataloader, device, validation_data, s=s)
+    clean, corrupted, latents, restored = get_samples(b, interpolant, dataloader, device, validation_data, s=s)
     push_fwd_func = interpolant.push_fwd
     c = '#62508f' # plot color
     fig, axes = plt.subplots(1,4, figsize=(20, 5))
 
     clean = grab(clean)
     corrupted = grab(corrupted)
-    generated = grab(generated)
+    restored = grab(restored)
 
     axes[0].scatter(clean[:,0], clean[:,1], alpha = 0.03, c = c)
     axes[0].set_title(r"Clean samples", fontsize = 18)
@@ -66,14 +66,14 @@ def save_fig_2dsynt_vec(idx, b, interpolant, dataloader, device, results_folder,
     axes[1].set_xlim(-6,6), axes[2].set_ylim(-6,6)
     axes[1].set_xticks([-4,0,4]), axes[2].set_yticks([]);
 
-    axes[2].scatter(generated[:,0], generated[:,1], alpha = 0.03, c = c)
-    axes[2].set_title(r"Generated samples ", fontsize = 18)
+    axes[2].scatter(restored[:,0], restored[:,1], alpha = 0.03, c = c)
+    axes[2].set_title(r"Restored samples ", fontsize = 18)
     axes[2].set_xlim(-6,6), axes[1].set_ylim(-6,6)
     axes[2].set_xticks([-4,0,4]), axes[1].set_yticks([])
 
-    generated_corrupted = push_fwd_func(torch.from_numpy(generated)).numpy()
-    axes[3].scatter(generated_corrupted[:,0], generated_corrupted[:,1], alpha = 0.03, c = c)
-    axes[3].set_title(r"Generated corrupted samples ", fontsize = 18)
+    restored_corrupted = push_fwd_func(torch.from_numpy(restored)).numpy()
+    axes[3].scatter(restored_corrupted[:,0], restored_corrupted[:,1], alpha = 0.03, c = c)
+    axes[3].set_title(r"Restored corrupted samples ", fontsize = 18)
     axes[3].set_xlim(-6,6), axes[3].set_ylim(-6,6)
     axes[3].set_xticks([-4,0,4]), axes[3].set_yticks([])
 
@@ -84,7 +84,7 @@ def save_fig_2dsynt_vec(idx, b, interpolant, dataloader, device, results_folder,
 
 
 def save_fig_2dsynt_coeff(idx, b, interpolant, dataloader, device, results_folder, losses, validation_data, s=None, **kargs):
-    clean, corrupted, latents, generated = get_samples(b, interpolant, dataloader, device, validation_data, s=s)
+    clean, corrupted, latents, restored = get_samples(b, interpolant, dataloader, device, validation_data, s=s)
     push_fwd_func = interpolant.push_fwd
 
     c = '#62508f' # plot color
@@ -101,7 +101,7 @@ def save_fig_2dsynt_coeff(idx, b, interpolant, dataloader, device, results_folde
     #     fig, axes = plt.subplots(1, 4, figsize=(20, 5))
     clean = grab(clean)
     corrupted = grab(corrupted)
-    generated = grab(generated)
+    restored = grab(restored)
 
     axes[0].scatter(clean[:,0], clean[:,1], alpha = 0.03, c = c)
     axes[0].set_title(r"Clean samples", fontsize = 18)
@@ -113,17 +113,17 @@ def save_fig_2dsynt_coeff(idx, b, interpolant, dataloader, device, results_folde
     axes[1].set_xlim(-6,6), axes[2].set_ylim(-6,6)
     axes[1].set_xticks([-4,0,4]), axes[2].set_yticks([]);
 
-    axes[2].scatter(generated[:,0], generated[:,1], alpha = 0.03, c = c)
-    axes[2].set_title(r"Generated samples ", fontsize = 18)
+    axes[2].scatter(restored[:,0], restored[:,1], alpha = 0.03, c = c)
+    axes[2].set_title(r"Restored samples ", fontsize = 18)
     axes[2].set_xlim(-6,6), axes[1].set_ylim(-6,6)
     axes[2].set_xticks([-4,0,4]), axes[1].set_yticks([])
 
-    generated_corrupted, latents_new = push_fwd_func(torch.from_numpy(generated), return_latents=True)
-    generated_corrupted = grab(generated_corrupted)
+    restored_corrupted, latents_new = push_fwd_func(torch.from_numpy(restored), return_latents=True)
+    restored_corrupted = grab(restored_corrupted)
     latents_new = latents_new.squeeze()
     angles_rad_new = grab(torch.atan2(latents_new[:, 1], latents_new[:, 0]))
-    axes[3].scatter(generated_corrupted[:,0], angles_rad_new, alpha = 0.03, c = c)
-    axes[3].set_title(r"Generated corrupted samples ", fontsize = 18)
+    axes[3].scatter(restored_corrupted[:,0], angles_rad_new, alpha = 0.03, c = c)
+    axes[3].set_title(r"Restored corrupted samples ", fontsize = 18)
     axes[3].set_xlim(-6,6), axes[3].set_ylim(-6,6)
     axes[3].set_xticks([-4,0,4]), axes[3].set_yticks([])
 

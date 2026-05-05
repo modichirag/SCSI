@@ -317,7 +317,7 @@ class Trainer:
                 pbar.set_description(f'loss: {total_loss:.4f}', refresh=pbar_refresh)
                 losses.append([total_loss, total_dloss, total_sloss])
 
-                torch.cuda.synchronize()
+                if torch.cuda.is_available(): torch.cuda.synchronize()
                 _ = torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.max_grad_norm)
                 self.opt.step()
                 self.opt.zero_grad()
@@ -329,7 +329,7 @@ class Trainer:
                     self.lr_scheduler.step()
                 if self.s_lr_scheduler is not None:
                     self.s_lr_scheduler.step()
-                torch.cuda.synchronize()
+                if torch.cuda.is_available(): torch.cuda.synchronize()
 
                 # If loss spikes, reset model and optimizer
                 reset_model = False
@@ -412,7 +412,7 @@ class Trainer:
                             print(f"Saved model at step {self.step}")
 
                 pbar.update(1)
-                torch.cuda.synchronize()
+                if torch.cuda.is_available(): torch.cuda.synchronize()
 
         # Save final model
         if self.master_process:
