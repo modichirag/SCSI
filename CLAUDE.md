@@ -77,3 +77,5 @@ Sampling for the EDM baseline goes through `generate.py::edm_sampler` (plus `edm
 - Run folder names are load-bearing: eval scripts reconstruct them from the same flags, so changing the naming logic in one driver requires matching changes in the corresponding `fid_eval_*` / `lpips_eval_*` / `clean_interpolants.py`.
 - `args.json` is written once per run — rerunning with different args to the same folder silently overwrites it.
 - There are no tests and no linter config. Iteration is via SLURM job scripts + notebooks in `notebooks/`.
+
+@claude.local.md

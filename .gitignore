@@ -37,5 +37,13 @@ results/
 # Cluster job scripts (contain user-specific paths)
 job-*.sh
 
-# Notebooks (contain user-specific paths and cached outputs)
+# Notebooks and logs (contain user-specific paths and cached outputs)
 notebooks/
+logs/
+tests/logs/
+
+# Private files (tracked on 'private' branch, not on 'main')
+AGENTS.md
+requirements-cluster.txt
+private_docs/
+claude.local.md
