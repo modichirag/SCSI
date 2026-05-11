@@ -5,6 +5,7 @@ matplotlib
 tqdm
 einops
 pillow
+requests
 
 # Training utilities
 ema-pytorch

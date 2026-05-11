@@ -1,4 +1,6 @@
-# SCSI — Stochastic Corruption–aware Stochastic Interpolants
+# SCSI — Self-Consistent Stochastic Interpolants
+
+Official implementation of **Generative Modeling from Black-box Corruptions via Self-Consistent Stochastic Interpolants** (Chirag Modi, Jiequn Han, Eric Vanden-Eijnden, Joan Bruna — ICLR 2026). [[link]](https://arxiv.org/abs/2512.10857)
 
 Research code for training generative models (diffusion / stochastic interpolants) from **corrupted** observations — i.e. learning a clean-data prior when only degraded samples are available. Corruptions include Gaussian noise, random/block masking, Gaussian/motion blur, JPEG compression, and random projections. Targets CIFAR-10, MNIST, CelebA, SDSS DR16 quasar spectra (1-D), and 2-D synthetic distributions (`two_moons`, `checkerboard`).
 
@@ -103,7 +105,17 @@ Top-level `*.py` files are thin argparse + config wrappers around `src/`.
 
 ## Citation
 
-If you use this code, please cite https://arxiv.org/abs/2512.10857.
+If you use this code, please cite:
+
+```bibtex
+@inproceedings{modi2025generative,
+  title={Generative Modeling from Black-box Corruptions via Self-Consistent Stochastic Interpolants},
+  author={Modi, Chirag and Han, Jiequn and Vanden-Eijnden, Eric and Bruna, Joan},
+  booktitle={International Conference on Learning Representations (ICLR)},
+  url={https://arxiv.org/abs/2512.10857},
+  year={2026}
+}
+```
 
 ## License
 
