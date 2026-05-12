@@ -18,13 +18,18 @@ A small MLP trained on `two_moons` with additive Gaussian noise. Runs on CPU in 
 
 ```bash
 python scsi_synthetic.py \
-    --dataset two_moons --corruption gaussian_noise \
+    --dataset two_moons \
+    --corruption gaussian_noise \
     --corruption_levels 0.5 \
-    --train_steps 10000 --batch_size 2048 \
-    --suffix smoke
+    --n_samples 6000 \
+    --train_steps 5000 \
+    --learning_rate 3e-3 \
+    --suffix test
 ```
 
-Outputs (loss curve, intermediate denoising snapshots, final model) land under `./results/two_moons-gaussian_noise-0.50-smoke/`. `tests/test_synthetic.py` runs the same configuration with smaller parameters as a wiring check.
+Other settings use driver defaults, including `batch_size=2000`, `fc_width=256`, `fc_depth=3`, `resamples=1`, `alpha=0.9`, `ode_steps=40`, and `t_emb_dim=32`.
+
+Outputs (loss curve, intermediate denoising snapshots, final model) land under `./results/two_moons-gaussian_noise-0.50-test/`. `tests/test_synthetic.py` runs a much smaller configuration as a wiring check.
 
 ## Quickstart: MNIST with random masking
 
@@ -32,14 +37,22 @@ A tiny U-Net trained on 50%-masked MNIST. Runs in a couple of minutes on a singl
 
 ```bash
 python -u scsi_image.py \
-    --dataset mnist --corruption random_mask \
+    --dataset mnist \
+    --corruption random_mask \
     --corruption_levels 0.5 0.0 \
-    --train_steps 100 --channels 32 --ode_steps 64 \
-    --alpha 0.9 --resamples 2 --learning_rate 3e-4 \
-    --save_every 10 --suffix smoke
+    --train_steps 100 \
+    --channels 32 \
+    --ode_steps 64 \
+    --alpha 0.9 \
+    --resamples 2 \
+    --learning_rate 3e-4 \
+    --save_every 10 \
+    --suffix test
 ```
 
-Outputs land under `./results/singleview/mnist-random_mask-0.50-0.00-smoke/`. `tests/test_image.py` runs the same configuration with smaller parameters as a wiring check.
+Other settings use driver defaults; for `random_mask`, omitting a third corruption level means the masked-region noise parameter defaults to `0.0`.
+
+Outputs land under `./results/singleview/mnist-random_mask-0.50-0.00-test/`. `tests/test_image.py` runs a much smaller configuration as a wiring check.
 
 ## A real example: CIFAR-10 with random masking
 

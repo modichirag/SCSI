@@ -2,12 +2,13 @@ import sys, os
 import torch
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.set_float32_matmul_precision('high')
+import json
 from torch.utils.data import DataLoader
 import numpy as np
 from tqdm import tqdm
 
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src'))
-from utils import count_parameters, infinite_dataloader, grab
+from utils import count_parameters, infinite_dataloader, grab, make_serializable
 from mlps import SimpleFeedForward, FeedForwardwithEMB
 from custom_datasets import get_dataset, CorruptedDataset
 from interpolant_utils import SCSInterpolant
@@ -24,16 +25,17 @@ parser = argparse.ArgumentParser(description="")
 parser.add_argument("--dataset", type=str, default="two_moons", help="dataset (two_moons, checkerboard)")
 parser.add_argument("--data_root", type=str, default=default_data_root(), help="root dir for dataset caches (default: $SCSI_DATA or ./data)")
 parser.add_argument("--dataset_seed", type=int, default=42, help="seed for synthetic dataset generation")
+parser.add_argument("--n_samples", type=int, default=10000, help="number of synthetic samples to generate/cache")
 parser.add_argument("--corruption", type=str, default="gaussian_noise", help="corruption")
 parser.add_argument("--corruption_levels", type=float, nargs='+', default=[0.5], help="corruption level")
-parser.add_argument("--fc_width", type=int, default=128, help="width of the feedforward network")
-parser.add_argument("--fc_depth", type=int, default=2, help="depth of the feedforward network")
+parser.add_argument("--fc_width", type=int, default=256, help="width of the feedforward network")
+parser.add_argument("--fc_depth", type=int, default=3, help="depth of the feedforward network")
 parser.add_argument("--t_emb_dim", type=int, default=32, help="time embedding dim for FeedForwardwithEMB")
 parser.add_argument("--alpha", type=float, default=0.9, help="prob of newly-transported pseudo-clean vs prior estimate")
-parser.add_argument("--resamples", type=int, default=2, help="resamples per loss eval in SCSInterpolant")
+parser.add_argument("--resamples", type=int, default=1, help="resamples per loss eval in SCSInterpolant")
 parser.add_argument("--gamma_scale", type=float, default=0.0, help="gaussian noise level in the interpolant")
 parser.add_argument("--train_steps", type=int, default=40000, help="number of channels in model")
-parser.add_argument("--batch_size", type=int, default=4000, help="batch size")
+parser.add_argument("--batch_size", type=int, default=2000, help="batch size")
 parser.add_argument("--learning_rate", type=float, default=1e-3, help="learning rate")
 parser.add_argument("--update_transport_every", type=int, default=1, help="continued training count")
 parser.add_argument("--prefix", type=str, default='', help="prefix for folder name")
@@ -75,6 +77,9 @@ results_folder = f"{args.results_root}/{folder}/"
 os.makedirs(results_folder, exist_ok=True)
 print(f"Results will be saved in folder: {results_folder}")
 use_latents, latent_dim = fwd_maps.parse_latents(corruption, None)
+args_dict = make_serializable(vars(args) if isinstance(args, argparse.Namespace) else args)
+with open(f"{results_folder}/args.json", "w") as f:
+    json.dump(args_dict, f, indent=4)
 
 # Initialize model and train
 use_follmer = False
@@ -97,7 +102,7 @@ if use_follmer:
     interpolant.loss_fn_cleandata = interpolant.loss_fn_follmer_cleandata
 if args.dataset in ["two_moons", "checkerboard"]:
     dim_in = 2
-    clean_dataset, _, _ = get_dataset(args.dataset, args.data_root, seed=args.dataset_seed)
+    clean_dataset, _, _ = get_dataset(args.dataset, args.data_root, seed=args.dataset_seed, n_samples=args.n_samples)
     dataset = CorruptedDataset(clean_dataset, fwd_func, tied_rng=False)
     dataloader = None
     if args.corruption.startswith("projection_coeff"):
