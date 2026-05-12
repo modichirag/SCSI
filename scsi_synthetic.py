@@ -16,7 +16,6 @@ from trainer_si import Trainer
 from paths import default_data_root, default_results_root
 import forward_maps as fwd_maps
 import argparse
-import matplotlib.pyplot as plt
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print("DEVICE : ", device)
@@ -140,6 +139,7 @@ trainer = Trainer(model=b,
         clean_data_steps=args.clean_data_steps,
         callback_fn=save_fig_fn,
         validation_data=valid_data_plot,
+        num_workers=0,
         )
 
 losses = trainer.train()

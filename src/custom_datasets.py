@@ -230,9 +230,9 @@ def _fetch_celebA(data_root, seed=None):
 
 
 def _fetch_two_moons(data_root, seed=42, n_samples=10000, noise=0.1):
-    from sklearn.datasets import make_moons
     cache = Path(data_root) / "two_moons" / f"seed_{seed}" / f"n_{n_samples}.npy"
     if not cache.exists():
+        from sklearn.datasets import make_moons
         cache.parent.mkdir(parents=True, exist_ok=True)
         X, _ = make_moons(n_samples=n_samples, noise=noise, random_state=seed)
         X = (4.0 * (X - 0.5)).astype(np.float32)  # preserve original scaling

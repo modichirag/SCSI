@@ -13,7 +13,6 @@ from torch.optim import Adam, AdamW
 from tqdm.auto import tqdm
 from ema_pytorch import EMA
 
-from transformers import get_cosine_schedule_with_warmup
 from utils import infinite_dataloader, divisible_by, push_to_device, remove_all_prefix
 from callbacks import save_losses_fig
 
@@ -140,6 +139,7 @@ class Trainer:
             if s_model is not None: self.s_opt.load_state_dict(opt_state[1])
                 
         if lr_scheduler:
+            from transformers import get_cosine_schedule_with_warmup
             num_warmup_steps = int(warmup_fraction * train_num_steps)
             self.lr_scheduler = get_cosine_schedule_with_warmup(
                 self.opt,
@@ -249,6 +249,8 @@ class Trainer:
 
 
     def train(self, loss_threshold=10.0, window=11):
+        if self.master_process:
+            print(f"Starting training: {self.train_num_steps} steps on {self.device}", flush=True)
         device = self.device
         losses = []
         min_loss = 1e10
@@ -302,9 +304,9 @@ class Trainer:
                     total_dloss += curr_loss.item()
 
                     if s_loss is not None:
-                        curr_sloss = s_loss.detach() 
+                        curr_sloss = s_loss.detach()
                         if self.ddp : dist.all_reduce(curr_sloss, op=dist.ReduceOp.AVG)
-                        total_sloss = total_sloss + curr_sloss.item() 
+                        total_sloss = total_sloss + curr_sloss.item()
                     total_loss += total_dloss + total_sloss
 
                     if self.s_model is not None:
