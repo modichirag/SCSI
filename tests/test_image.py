@@ -41,26 +41,26 @@ def main():
     corrupt_fn = partial(fwd_func, cond_y=False, embed=False)
     use_latents, latent_dim = fwd_maps.parse_latents(corruption, D, C=nc, cond_y=False)
 
-    # Tiny U-Net (8 channels keeps it well under a million params).
+    # Tiny U-Net (16 channels keeps it well under a million params).
     model = ConditionalDhariwalUNet(
         D, nc, nc,
         latent_dim=latent_dim,
-        model_channels=32,
+        model_channels=16,
         max_pos_embedding=2,
     ).to(device)
 
     interpolant = SCSInterpolant(
-        corrupt_fn, use_latents=use_latents, n_steps=64, alpha=0.9, resamples=2, gamma_scale=0.0,
+        corrupt_fn, use_latents=use_latents, n_steps=8, alpha=0.9, resamples=2, gamma_scale=0.0,
     ).to(device)
 
     corrupt_dataset = CorruptedDataset(image_dataset, corrupt_fn, tied_rng=True, base_seed=42)
 
-    train_steps = 100
+    train_steps = 20
     trainer = Trainer(
         model=model,
         interpolant=interpolant,
         dataset=corrupt_dataset,
-        train_batch_size=128,
+        train_batch_size=32,
         gradient_accumulate_every=1,
         train_lr=3e-4,
         lr_scheduler=None,

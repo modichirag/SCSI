@@ -40,27 +40,27 @@ def main():
 
     # Validation panel for the callback.
     interpolant = SCSInterpolant(
-        fwd_func, use_latents=use_latents, n_steps=40, alpha=0.9, resamples=2, gamma_scale=0.0,
+        fwd_func, use_latents=use_latents, n_steps=8, alpha=0.9, resamples=2, gamma_scale=0.0,
     ).to(device)
     clean_valid = clean_dataset.array.to(device)
     corrupted_valid = interpolant.push_fwd(clean_valid)
     validation_data = (clean_valid, corrupted_valid, None)
 
     # Tiny model.
-    model = FeedForwardwithEMB(dim_in, 32, [128] * 2, latent_dim=None).to(device)
+    model = FeedForwardwithEMB(dim_in, 32, [64] * 2, latent_dim=None).to(device)
 
-    train_steps = 10000
+    train_steps = 200
     trainer = Trainer(
         model=model,
         interpolant=interpolant,
         dataset=dataset,
-        train_batch_size=2048,
+        train_batch_size=256,
         gradient_accumulate_every=1,
         update_transport_every=1,
         train_lr=1e-3,
         lr_scheduler=None,
         train_num_steps=train_steps,
-        save_and_sample_every=1000,  # one mid-train viz + 'fin' viz
+        save_and_sample_every=100,  # one mid-train viz + 'fin' viz
         results_folder=results_folder,
         num_workers=0,
         clean_data_steps=0,
