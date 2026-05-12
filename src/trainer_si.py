@@ -404,8 +404,7 @@ class Trainer:
                                     self.s_model.eval()
                                 with torch.no_grad(), (torch.autocast(device_type=device, dtype=typedict[self.mixed_precision_type]) if self.mixed_precision_type != 'fp32' else nullcontext()):
                                     if self.callback_fn is not None:
-                                        milestone=self.step // self.save_and_sample_every
-                                        self.callback_fn(idx = milestone,
+                                        self.callback_fn(idx = self.step,
                                                         b = model_to_use, s = s_model_to_use, interpolant = self.interpolant,
                                                         dataloader = self.dl, validation_data = self.validation_data,
                                                         losses = losses, device = self.device,
