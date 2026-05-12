@@ -25,15 +25,18 @@ parser = argparse.ArgumentParser(description="")
 parser.add_argument("--dataset", type=str, default="two_moons", help="dataset (two_moons, checkerboard)")
 parser.add_argument("--data_root", type=str, default=default_data_root(), help="root dir for dataset caches (default: $SCSI_DATA or ./data)")
 parser.add_argument("--dataset_seed", type=int, default=42, help="seed for synthetic dataset generation")
-parser.add_argument("--corruption", type=str, default="projection_coeff", help="corruption")
-parser.add_argument("--corruption_levels", type=float, nargs='+', help="corruption level")
-parser.add_argument("--fc_width", type=int, default=256, help="width of the feedforward network")
-parser.add_argument("--fc_depth", type=int, default=3, help="depth of the feedforward network")
-parser.add_argument("--gamma_scale", type=float, default=1.0, help="gaussian noise level in the interpolant")
+parser.add_argument("--corruption", type=str, default="gaussian_noise", help="corruption")
+parser.add_argument("--corruption_levels", type=float, nargs='+', default=[0.5], help="corruption level")
+parser.add_argument("--fc_width", type=int, default=128, help="width of the feedforward network")
+parser.add_argument("--fc_depth", type=int, default=2, help="depth of the feedforward network")
+parser.add_argument("--t_emb_dim", type=int, default=32, help="time embedding dim for FeedForwardwithEMB")
+parser.add_argument("--alpha", type=float, default=0.9, help="prob of newly-transported pseudo-clean vs prior estimate")
+parser.add_argument("--resamples", type=int, default=2, help="resamples per loss eval in SCSInterpolant")
+parser.add_argument("--gamma_scale", type=float, default=0.0, help="gaussian noise level in the interpolant")
 parser.add_argument("--train_steps", type=int, default=40000, help="number of channels in model")
 parser.add_argument("--batch_size", type=int, default=4000, help="batch size")
-parser.add_argument("--learning_rate", type=float, default=5e-4, help="learning rate")
-parser.add_argument("--update_transport_every", type=int, default=32, help="continued training count")
+parser.add_argument("--learning_rate", type=float, default=1e-3, help="learning rate")
+parser.add_argument("--update_transport_every", type=int, default=1, help="continued training count")
 parser.add_argument("--prefix", type=str, default='', help="prefix for folder name")
 parser.add_argument("--suffix", type=str, default='', help="suffix for folder name")
 parser.add_argument("--lr_scheduler", action='store_true', help="use scheduler if provided, else not")
@@ -75,18 +78,18 @@ print(f"Results will be saved in folder: {results_folder}")
 use_latents, latent_dim = fwd_maps.parse_latents(corruption, None)
 
 # Initialize model and train
-alpha = 1.0
 use_follmer = False
 if use_follmer:
-    diffusion_coef = corruption_levels[1]
+    diffusion_coeff = corruption_levels[1]
 else:
-    diffusion_coef = None
+    diffusion_coeff = 0.0
 interpolant = SCSInterpolant(
     fwd_func,
     use_latents=use_latents,
     n_steps=args.ode_steps,
-    alpha=alpha,
-    diffusion_coef=diffusion_coef,
+    alpha=args.alpha,
+    resamples=args.resamples,
+    diffusion_coeff=diffusion_coeff,
     gamma_scale=args.gamma_scale
 ).to(device)
 if use_follmer:
@@ -119,7 +122,7 @@ valid_data_plot = (clean_data_valid, corrupted_valid_plot, latents_valid)
 
 # to update architecture
 # b =  SimpleFeedForward(dim_in, [args.fc_width]*args.fc_depth, latent_dim=latent_dim, use_follmer=use_follmer).to(device)
-b =  FeedForwardwithEMB(dim_in, 64, [args.fc_width]*args.fc_depth, latent_dim=latent_dim, use_follmer=use_follmer).to(device)
+b =  FeedForwardwithEMB(dim_in, args.t_emb_dim, [args.fc_width]*args.fc_depth, latent_dim=latent_dim, use_follmer=use_follmer).to(device)
 print("Parameter count : ", count_parameters(b))
 
 trainer = Trainer(model=b,

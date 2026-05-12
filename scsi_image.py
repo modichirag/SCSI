@@ -12,6 +12,7 @@ from networks import ConditionalDhariwalUNet
 from interpolant_utils import SCSInterpolant,  SCSInterpolantCombined
 import forward_maps as fwd_maps
 from trainer_si import Trainer
+from callbacks import save_image
 from utils import remove_all_prefix
 from functools import partial
 import argparse
@@ -68,7 +69,7 @@ else:
     image_dataset = ImagesOnly(dataset)
 model_channels = args.channels #192
 train_num_steps = args.train_steps
-save_and_sample_every = min(args.save_every, int(train_num_steps//10))
+save_and_sample_every = args.save_every
 batch_size = args.batch_size
 lr = args.learning_rate
 gated = args.gated
@@ -184,7 +185,8 @@ trainer = Trainer(model=b,
                   update_transport_every=args.transport_steps,
                   s_model=s_model,
                   clean_data_steps=args.cleansteps,
-                  save_transport=args.save_transport
+                  save_transport=args.save_transport,
+                  callback_fn=save_image,
         )
 
 trainer.train()

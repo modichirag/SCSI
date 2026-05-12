@@ -567,8 +567,11 @@ def random_projection_coeff(dim_out: float, epsilon: float) -> callable:
     def fwd(x: torch.Tensor, return_latents=False, generator=None):
         """
         Args:
-            x: a 2-D tensor of shape (B, dim_in)
+            x: a 1-D tensor of shape (dim_in,) or a 2-D tensor of shape (B, dim_in)
         """
+        squeeze = x.dim() == 1
+        if squeeze:
+            x = x.unsqueeze(0)
         N, dim_in = x.shape
         A = torch.randn(N, dim_out, dim_in, device=x.device)
         A = A / torch.linalg.norm(A, dim=-1, keepdim=True)
@@ -588,6 +591,9 @@ def random_projection_coeff(dim_out: float, epsilon: float) -> callable:
         padded = torch.randn(N, dim_in - dim_out, device=x.device)
         x_n = torch.cat([x_n, padded], dim=-1)
 
+        if squeeze:
+            x_n = x_n.squeeze(0)
+            A = A.squeeze(0)
         if return_latents:
             return x_n, A
         else:
@@ -603,8 +609,11 @@ def random_projection_vec(dim_out: float, epsilon: float) -> callable:
     def fwd(x: torch.Tensor, return_latents=False, generator=None):
         """
         Args:
-            x: a 2-D tensor of shape (B, dim_in)
+            x: a 1-D tensor of shape (dim_in,) or a 2-D tensor of shape (B, dim_in)
         """
+        squeeze = x.dim() == 1
+        if squeeze:
+            x = x.unsqueeze(0)
         N, dim_in = x.shape
         # A = A_base.repeat(N, 1, 1).to(x.device)
         A = torch.randn(N, dim_out, dim_in, device=x.device)
@@ -621,6 +630,9 @@ def random_projection_vec(dim_out: float, epsilon: float) -> callable:
         z = torch.randn(x_n.shape, generator=generator).to(x.device)
         x_n += z * epsilon
 
+        if squeeze:
+            x_n = x_n.squeeze(0)
+            A = A.squeeze(0)
         if return_latents:
             return x_n, A
         else:
@@ -644,6 +656,8 @@ corruption_dict = {
 
 def parse_latents(corruption, D, C=3, s=None, cond_y=False):
     """Parse the corruption function and return the latent dimensions."""
+    use_latents = False
+    latent_dim = None
     if 'mask' in corruption:
         use_latents = True
         latent_dim = [1, D, D] if not cond_y else [C, D, D]

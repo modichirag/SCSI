@@ -1,5 +1,6 @@
 import os
 import numpy as np
+from contextlib import nullcontext
 from pathlib import Path
 from multiprocessing import cpu_count
 
@@ -138,7 +139,7 @@ class Trainer:
             self.opt.load_state_dict(opt_state[0])
             if s_model is not None: self.s_opt.load_state_dict(opt_state[1])
                 
-        if lr_scheduler is not None:
+        if lr_scheduler:
             num_warmup_steps = int(warmup_fraction * train_num_steps)
             self.lr_scheduler = get_cosine_schedule_with_warmup(
                 self.opt,
@@ -285,7 +286,7 @@ class Trainer:
                     data, obs, latents = next(self.dl)
                     data, obs = push_to_device(data, obs, device=device)
                     latents = latents.to(self.device) if self.interpolant.use_latents else None
-                    with torch.autocast(device_type=device, dtype=typedict[self.mixed_precision_type]):
+                    with (torch.autocast(device_type=device, dtype=typedict[self.mixed_precision_type]) if self.mixed_precision_type != 'fp32' else nullcontext()):
                         if self.step < self.clean_data_steps:
                             loss, s_loss = self.interpolant.loss_fn(self.model, obs, latents, x0=data, s=self.s_model)
                         else:
@@ -399,7 +400,7 @@ class Trainer:
                             try:
                                 if self.s_model is not None:
                                     self.s_model.eval()
-                                with torch.no_grad(), torch.autocast(device_type=device, dtype=typedict[self.mixed_precision_type]):
+                                with torch.no_grad(), (torch.autocast(device_type=device, dtype=typedict[self.mixed_precision_type]) if self.mixed_precision_type != 'fp32' else nullcontext()):
                                     if self.callback_fn is not None:
                                         milestone=self.step // self.save_and_sample_every
                                         self.callback_fn(idx = milestone,
@@ -428,7 +429,7 @@ class Trainer:
             else:
                 s_model_to_use = None
             try:
-                with torch.no_grad(), torch.autocast(device_type=device, dtype=typedict[self.mixed_precision_type]):
+                with torch.no_grad(), (torch.autocast(device_type=device, dtype=typedict[self.mixed_precision_type]) if self.mixed_precision_type != 'fp32' else nullcontext()):
                     if self.callback_fn is not None:
                         self.callback_fn(idx = "fin",
                                         b = model_to_use, s = s_model_to_use, interpolant = self.interpolant,
