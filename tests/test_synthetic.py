@@ -1,6 +1,6 @@
 """Smoke test: train a tiny SCSI MLP on two_moons + gaussian_noise for a few
 steps, then save a (clean / corrupted / generated) panel via the existing
-2-D callback. Mirrors the wiring in `mlp_interpolants.py`.
+2-D callback. Mirrors the wiring in `scsi_synthetic.py`.
 
 Run from repo root:
     python tests/test_synthetic.py
@@ -49,7 +49,7 @@ def main():
     # Tiny model.
     model = FeedForwardwithEMB(dim_in, 32, [128] * 2, latent_dim=None).to(device)
 
-    train_steps = 2000
+    train_steps = 10000
     trainer = Trainer(
         model=model,
         interpolant=interpolant,
@@ -60,7 +60,7 @@ def main():
         train_lr=1e-3,
         lr_scheduler=None,
         train_num_steps=train_steps,
-        save_and_sample_every=train_steps,  # one mid-train viz + 'fin' viz
+        save_and_sample_every=1000,  # one mid-train viz + 'fin' viz
         results_folder=results_folder,
         num_workers=0,
         clean_data_steps=0,

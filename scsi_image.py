@@ -70,9 +70,9 @@ model_channels = args.channels #192
 train_num_steps = args.train_steps
 save_and_sample_every = min(args.save_every, int(train_num_steps//10))
 batch_size = args.batch_size
-lr = args.learning_rate 
+lr = args.learning_rate
 gated = args.gated
-if gated: 
+if gated:
     args.suffix = f"{args.suffix}-gated" if args.suffix else "gated"
 lr_scheduler = args.lr_scheduler
 
@@ -170,8 +170,8 @@ else:
 corrupt_dataset = CorruptedDataset(image_dataset, corrupt_fn, \
                                    tied_rng=not(args.multiview), base_seed=args.dataset_seed)
 
-trainer = Trainer(model=b, 
-                  interpolant=interpolant, 
+trainer = Trainer(model=b,
+                  interpolant=interpolant,
                   dataset = corrupt_dataset,
                   train_batch_size = batch_size // args.n_transports,
                   gradient_accumulate_every = int(batch_size * args.n_transports// args.mini_batch_size),
@@ -179,7 +179,7 @@ trainer = Trainer(model=b,
                   lr_scheduler = lr_scheduler,
                   train_num_steps = train_num_steps,
                   save_and_sample_every= save_and_sample_every,
-                  results_folder=results_folder, 
+                  results_folder=results_folder,
                   warmup_fraction=0.05,
                   update_transport_every=args.transport_steps,
                   s_model=s_model,

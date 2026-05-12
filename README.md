@@ -17,7 +17,7 @@ Python 3.9+ and a recent PyTorch (CUDA for serious training; CPU is fine for the
 Runs on CPU in a couple of minutes and exercises the full training loop.
 
 ```bash
-python mlp_interpolants.py \
+python scsi_synthetic.py \
     --dataset two_moons --corruption projection_coeff \
     --corruption_levels 1 0.1 \
     --train_steps 2000 --batch_size 500 \
@@ -29,7 +29,7 @@ Outputs (loss curve, intermediate denoising snapshots, final model) land under `
 ## A real example: CIFAR-10 with random masking
 
 ```bash
-python -u scsi.py \
+python -u scsi_image.py \
     --dataset cifar10 --corruption random_mask \
     --corruption_levels 0.5 0.0 1.0 \
     --train_steps 50000 --channels 32 --ode_steps 64 \
@@ -74,8 +74,8 @@ Top-level drivers add `<repo>/src` to `sys.path` via a `__file__`-relative `sys.
 
 | Script | Purpose |
 |---|---|
-| `mlp_interpolants.py` | 2-D synthetic MLP experiments (`two_moons`, `checkerboard`) |
-| `scsi.py` | Single-GPU training from corrupted images |
+| `scsi_synthetic.py` | 2-D synthetic MLP experiments (`two_moons`, `checkerboard`) |
+| `scsi_image.py` | Single-GPU training from corrupted images |
 | `scsi_distributed.py` | DDP variant via `torchrun` |
 | `awgn.py` | Specialization for the additive-Gaussian-noise case |
 | `qsos.py` | 1-D quasar-spectra variant; uses `KarrasUnet1D` |

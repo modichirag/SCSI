@@ -11,7 +11,7 @@ Research code for training generative models (diffusion / stochastic interpolant
 Top-level driver scripts prepend `<repo>/src` to `sys.path` via a `__file__`-relative `sys.path.append` — they can be run from any working directory. No install step is required; clone and run.
 
 ```bash
-python -u scsi.py --dataset cifar10 --corruption random_mask \
+python -u scsi_image.py --dataset cifar10 --corruption random_mask \
     --corruption_level 0.5 0.0 1.0 --train_steps 50000 --channels 32 \
     --ode_steps 64 --alpha 0.9 --resamples 2 --learning_rate 5e-4 --lr_scheduler
 ```
@@ -30,7 +30,7 @@ Paths are controlled by two env vars / CLI flags, resolved in `src/paths.py`:
 - `SCSI_DATA` / `--data_root` — dataset cache root (default `./data`).
 - `SCSI_RESULTS` / `--results_root` — training output root (default `./results`).
 
-Multiview-aware drivers append `singleview/` or `multiview/` under `results_root` based on `--multiview`; plain drivers (`train.py`, `sample.py`, `fid_eval.py`, `fid_eval_stage.py`) write directly under `results_root`. Each run saves `args.json`, `model-best.pt`, and loss/FID artifacts into a folder whose name is auto-built from `{dataset}-{corruption}-{levels}-{options}-{suffix}` (see `scsi.py` for the naming convention). The DPS eval drivers (`fid_eval_dps.py`, `lpips_eval_dps.py`) also load their baseline EDM checkpoint from `{results_root}/{modelfolder}/model-{model}.pt`.
+Multiview-aware drivers append `singleview/` or `multiview/` under `results_root` based on `--multiview`; plain drivers (`train.py`, `sample.py`, `fid_eval.py`, `fid_eval_stage.py`) write directly under `results_root`. Each run saves `args.json`, `model-best.pt`, and loss/FID artifacts into a folder whose name is auto-built from `{dataset}-{corruption}-{levels}-{options}-{suffix}` (see `scsi_image.py` for the naming convention). The DPS eval drivers (`fid_eval_dps.py`, `lpips_eval_dps.py`) also load their baseline EDM checkpoint from `{results_root}/{modelfolder}/model-{model}.pt`.
 
 The SLURM scripts (`job-cifar10.sh`, `job-dist.sh`, `job-sample.sh`) are the canonical examples of invocation — copy flags from there rather than inventing new ones.
 
@@ -39,11 +39,11 @@ The SLURM scripts (`job-cifar10.sh`, `job-dist.sh`, `job-sample.sh`) are the can
 Top-level scripts are **thin argparse + config wrappers**, not libraries. The real logic is in `src/`. Each driver roughly wires together a dataset, a corruption function, a model, an interpolant/loss class, and a `Trainer`:
 
 - `train.py`, `sample.py`, `fid_eval.py` — plain EDM diffusion baseline (clean data only), using `EDMPrecond` + `VELoss` + `edm_sampler`.
-- `scsi.py` — main single-GPU entry for learning from corrupted images via stochastic interpolants.
+- `scsi_image.py` — main single-GPU entry for learning from corrupted images via stochastic interpolants.
 - `scsi_distributed.py` — same, but DDP via `torchrun`.
 - `awgn.py` — specialization using `SCSInterpolantAWGN` for the additive-Gaussian-noise case.
 - `qsos.py` — 1-D quasar-spectra application; uses `KarrasUnet1D`.
-- `mlp_interpolants.py` — low-dim MLP experiments on 2-D synthetic distributions (`checker`, `moon`, `gmm`) using `FeedForwardwithEMB` + `Trainer`. Pulls distributions from `src/distribution.py` (streaming, not the registry); migrating to `get_dataset` for `two_moons` / `checkerboard` is pending.
+- `scsi_synthetic.py` — low-dim MLP experiments on 2-D synthetic distributions (`checker`, `moon`, `gmm`) using `FeedForwardwithEMB` + `Trainer`. Pulls distributions from `src/distribution.py` (streaming, not the registry); migrating to `get_dataset` for `two_moons` / `checkerboard` is pending.
 - `clean_interpolants.py` — produces "cleaned" samples from a trained interpolant (used as input to warm-start runs).
 - `fid_eval_*.py`, `lpips_eval_*.py`, `fid_eval_stage.py` — evaluation drivers; `_dps` variants benchmark diffusion posterior sampling baselines via `src/dps.py`.
 

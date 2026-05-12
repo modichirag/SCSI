@@ -1,6 +1,6 @@
 """Smoke test: train a tiny SCSI U-Net on MNIST + random_mask for a handful
 of steps, then save an (original / corrupted / generated) panel via the
-existing image callback. Mirrors the wiring in `scsi.py`.
+existing image callback. Mirrors the wiring in `scsi_image.py`.
 
 Run from repo root:
     python tests/test_image.py
@@ -45,27 +45,27 @@ def main():
     model = ConditionalDhariwalUNet(
         D, nc, nc,
         latent_dim=latent_dim,
-        model_channels=8,
+        model_channels=32,
         max_pos_embedding=2,
     ).to(device)
 
     interpolant = SCSInterpolant(
-        corrupt_fn, use_latents=use_latents, n_steps=40, alpha=0.9, resamples=2, gamma_scale=0.0,
+        corrupt_fn, use_latents=use_latents, n_steps=64, alpha=0.9, resamples=2, gamma_scale=0.0,
     ).to(device)
 
     corrupt_dataset = CorruptedDataset(image_dataset, corrupt_fn, tied_rng=True, base_seed=42)
 
-    train_steps = 50
+    train_steps = 100
     trainer = Trainer(
         model=model,
         interpolant=interpolant,
         dataset=corrupt_dataset,
-        train_batch_size=16,
+        train_batch_size=128,
         gradient_accumulate_every=1,
-        train_lr=1e-4,
+        train_lr=3e-4,
         lr_scheduler=None,
         train_num_steps=train_steps,
-        save_and_sample_every=train_steps,  # one mid-train viz + 'fin' viz
+        save_and_sample_every=10,  # one mid-train viz + 'fin' viz
         results_folder=results_folder,
         num_workers=0,
         callback_fn=save_image,
