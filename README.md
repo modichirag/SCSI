@@ -12,19 +12,34 @@ pip install -r requirements.txt
 
 Python 3.9+ and a recent PyTorch (CUDA for serious training; CPU is fine for the 2-D MLP smoke tests) are expected.
 
-## Quickstart: 2-D synthetic smoke test
+## Quickstart: 2-D synthetic example
 
-Runs on CPU in a couple of minutes and exercises the full training loop.
+A small MLP trained on `two_moons` with additive Gaussian noise. Runs on CPU in a couple of minutes and exercises the full training loop.
 
 ```bash
 python scsi_synthetic.py \
-    --dataset two_moons --corruption projection_coeff \
-    --corruption_levels 1 0.1 \
-    --train_steps 2000 --batch_size 500 \
+    --dataset two_moons --corruption gaussian_noise \
+    --corruption_levels 0.5 \
+    --train_steps 10000 --batch_size 2048 \
     --suffix smoke
 ```
 
-Outputs (loss curve, intermediate denoising snapshots, final model) land under `./results/two_moons-projection_coeff-1.00-0.10-smoke/`.
+Outputs (loss curve, intermediate denoising snapshots, final model) land under `./results/two_moons-gaussian_noise-0.50-smoke/`. `tests/test_synthetic.py` runs the same configuration with smaller parameters as a wiring check.
+
+## Quickstart: MNIST with random masking
+
+A tiny U-Net trained on 50%-masked MNIST. Runs in a couple of minutes on a single GPU and exercises the image training pipeline end-to-end.
+
+```bash
+python -u scsi_image.py \
+    --dataset mnist --corruption random_mask \
+    --corruption_levels 0.5 0.0 \
+    --train_steps 100 --channels 32 --ode_steps 64 \
+    --alpha 0.9 --resamples 2 --learning_rate 3e-4 \
+    --save_every 10 --suffix smoke
+```
+
+Outputs land under `./results/singleview/mnist-random_mask-0.50-0.00-smoke/`. `tests/test_image.py` runs the same configuration with smaller parameters as a wiring check.
 
 ## A real example: CIFAR-10 with random masking
 
