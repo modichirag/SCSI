@@ -59,7 +59,7 @@ The pipeline has four pluggable pieces; a driver picks one of each and hands the
 
 **3. Model (`networks.py`, `karras_unet.py`, `karras_unet_1d.py`, `mlps.py`).** `networks.py` is vendored EDM code (NVIDIA); the key class used everywhere is `ConditionalDhariwalUNet`, which accepts `latent_dim` so the corruption's auxiliary output (mask, blurred image, k-space indices, …) can be injected as conditioning. `EDMPrecond` is the baseline wrapper used by `train.py`. 1-D variants live in `karras_unet_1d.py`. MLP experiments use `SimpleFeedForward`/`FeedForwardwithEMB` in `mlps.py` (project-authored, kept separate from the NVIDIA-licensed `networks.py`) and `MLPResNet` / `MLPVelocityField` in `networks.py` / `interpolant_utils.py`.
 
-**4. Interpolant + training loop (`interpolant_utils.py`, `trainer_si.py`).** `SCSInterpolant` (and variants `…Combined`, `…AWGN`, `…Follmer`) own the stochastic-interpolant loss, the transport step that produces pseudo-clean targets `x0` from corrupted `x`, and the ODE/SDE samplers (`euler`, `heun`). The key flags are:
+**4. Interpolant + training loop (`interpolant_utils.py`, `trainer_si.py`).** `SCSInterpolant` (and variants `…Combined`, `…AWGN`) own the stochastic-interpolant loss, the transport step that produces pseudo-clean targets `x0` from corrupted `x`, and the ODE/SDE samplers (`euler`, `heun`). The key flags are:
 
 - `--alpha` — probability of using newly-transported pseudo-clean data vs. prior estimate.
 - `--resamples` — number of resampling iterations per loss eval.

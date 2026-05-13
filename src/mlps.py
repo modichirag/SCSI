@@ -8,17 +8,12 @@ from networks import Linear, PositionalEmbedding
 
 class SimpleFeedForward(nn.Module):
     def __init__(
-        self, dim, hidden_sizes = [256, 256], activation=torch.nn.ReLU, latent_dim=None, use_follmer=False
+        self, dim, hidden_sizes = [256, 256], activation=torch.nn.ReLU, latent_dim=None
     ):
         super().__init__()
         self.latent_dim = latent_dim if latent_dim is not None else 0
         layers = []
         prev_dim = dim + self.latent_dim + 1 # 1 for t
-        if use_follmer:
-            prev_dim += dim # additional input for starting point
-            self.forward = self.forward_follmer
-        else:
-            self.forward = self.forward_ode
         for hidden_size in hidden_sizes:
             layers.append(torch.nn.Linear(prev_dim, hidden_size))
             layers.append(activation())
@@ -34,7 +29,7 @@ class SimpleFeedForward(nn.Module):
         t = t.unsqueeze(-1)
         return self.net(torch.cat((x, t, latent)))
 
-    def forward_ode(self, x, t, latents=None):
+    def forward(self, x, t, latents=None):
         batch_size = x.shape[0]
         if latents is not None:
             if latents.shape[0] != batch_size:
@@ -46,13 +41,10 @@ class SimpleFeedForward(nn.Module):
             latents = torch.zeros(x.shape[0], self.latent_dim, device=x.device, dtype=x.dtype)
         return vmap(self._single_forward, in_dims=(0, 0, 0), out_dims=(0))(x, t, latents)
 
-    def forward_follmer(self, x, x1, t, latent):
-        return self.forward_ode(torch.cat((x, x1), dim=-1), t, latent)
-
 
 class FeedForwardwithEMB(nn.Module):
     def __init__(
-        self, dim, emb_channels=64, hidden_sizes = [256, 256], activation=torch.nn.SiLU, latent_dim=None, use_follmer=False
+        self, dim, emb_channels=64, hidden_sizes = [256, 256], activation=torch.nn.SiLU, latent_dim=None
     ):
         super().__init__()
         self.latent_dim = latent_dim if latent_dim is not None else 0
@@ -61,11 +53,6 @@ class FeedForwardwithEMB(nn.Module):
         prev_dim = dim + emb_channels # emb for time
         if self.latent_dim > 0:
             prev_dim += emb_channels # emb for latent
-        if use_follmer:
-            prev_dim += dim # additional input for starting point
-            self.forward = self.forward_follmer
-        else:
-            self.forward = self.forward_ode
         for hidden_size in hidden_sizes:
             layers.append(torch.nn.Linear(prev_dim, hidden_size))
             layers.append(activation())
@@ -85,7 +72,7 @@ class FeedForwardwithEMB(nn.Module):
                 Linear(in_features=emb_channels, out_features=emb_channels, bias=False, init_mode='kaiming_normal', init_weight=np.sqrt(latent_dim))
             )
 
-    def forward_ode(self, x, t, latents=None):
+    def forward(self, x, t, latents=None):
         batch_size = x.shape[0]
         if latents is not None:
             if latents.shape[0] != batch_size:
@@ -99,6 +86,3 @@ class FeedForwardwithEMB(nn.Module):
             return self.final_net(torch.cat((x, t_emb, latent_emb), dim=-1))
         else:
             return self.final_net(torch.cat((x, t_emb), dim=-1))
-
-    def forward_follmer(self, x, x1, t, latent):
-        return self.forward_ode(torch.cat((x, x1), dim=-1), t, latent)

@@ -82,24 +82,15 @@ with open(f"{results_folder}/args.json", "w") as f:
     json.dump(args_dict, f, indent=4)
 
 # Initialize model and train
-use_follmer = False
-if use_follmer:
-    diffusion_coeff = corruption_levels[1]
-else:
-    diffusion_coeff = 0.0
 interpolant = SCSInterpolant(
     fwd_func,
     use_latents=use_latents,
     n_steps=args.ode_steps,
     alpha=args.alpha,
     resamples=args.resamples,
-    diffusion_coeff=diffusion_coeff,
+    diffusion_coeff=0.0,
     gamma_scale=args.gamma_scale
 ).to(device)
-if use_follmer:
-    interpolant.transport = interpolant.transport_follmer
-    interpolant.loss_fn = interpolant.loss_fn_follmer
-    interpolant.loss_fn_cleandata = interpolant.loss_fn_follmer_cleandata
 if args.dataset in ["two_moons", "checkerboard"]:
     dim_in = 2
     clean_dataset, _, _ = get_dataset(args.dataset, args.data_root, seed=args.dataset_seed, n_samples=args.n_samples)
@@ -124,9 +115,7 @@ else:
     corrupted_valid_plot = corrupted_valid
 valid_data_plot = (clean_data_valid, corrupted_valid_plot, latents_valid)
 
-# to update architecture
-# b =  SimpleFeedForward(dim_in, [args.fc_width]*args.fc_depth, latent_dim=latent_dim, use_follmer=use_follmer).to(device)
-b =  FeedForwardwithEMB(dim_in, args.t_emb_dim, [args.fc_width]*args.fc_depth, latent_dim=latent_dim, use_follmer=use_follmer).to(device)
+b =  FeedForwardwithEMB(dim_in, args.t_emb_dim, [args.fc_width]*args.fc_depth, latent_dim=latent_dim).to(device)
 print("Parameter count : ", count_parameters(b))
 
 trainer = Trainer(model=b,
