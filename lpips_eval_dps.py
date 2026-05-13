@@ -2,7 +2,7 @@ import torch
 import sys, os
 import json
 import argparse
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
 from ema_pytorch import EMA
 import numpy as np
 
@@ -159,5 +159,4 @@ to_save = {'LPIPS_alex': losses[0],
 save_name = save_name.replace("ssim", "metrics")
 with open(save_name + '.json', 'w') as file:
         json.dump(to_save, file, indent=4)
-
 

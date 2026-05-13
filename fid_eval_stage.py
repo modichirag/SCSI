@@ -2,7 +2,7 @@ import torch
 import sys, os
 import json
 import argparse
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
 from ema_pytorch import EMA
 
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src'))

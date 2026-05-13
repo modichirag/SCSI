@@ -3,13 +3,10 @@ import torch
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.set_float32_matmul_precision('high')
 import json
-from torch.utils.data import DataLoader
-import numpy as np
-from tqdm import tqdm
 
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src'))
-from utils import count_parameters, infinite_dataloader, grab, make_serializable
-from mlps import SimpleFeedForward, FeedForwardwithEMB
+from utils import count_parameters, make_serializable
+from mlps import FeedForwardwithEMB
 from custom_datasets import get_dataset, CorruptedDataset
 from interpolant_utils import SCSInterpolant
 from callbacks import save_fig_2dsynt_coeff, save_fig_2dsynt_vec

@@ -2,7 +2,7 @@ import torch
 import sys, os
 import json
 import argparse
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
 from ema_pytorch import EMA
 import numpy as np
 
@@ -190,5 +190,4 @@ for _, image in enumerate(dl):
 x = np.concatenate(x, axis=0)
 print(f"Processed {i} batches", x.shape)
 np.save(f"{results_folder}/restored_{i//10+1}.npy", x)
-
 

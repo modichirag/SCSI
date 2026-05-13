@@ -32,8 +32,6 @@ Paths are controlled by two env vars / CLI flags, resolved in `src/paths.py`:
 
 Multiview-aware drivers append `singleview/` or `multiview/` under `results_root` based on `--multiview`; plain drivers (`train.py`, `sample.py`, `fid_eval.py`, `fid_eval_stage.py`) write directly under `results_root`. Each run saves `args.json`, `model-best.pt`, and loss/FID artifacts into a folder whose name is auto-built from `{dataset}-{corruption}-{levels}-{options}-{suffix}` (see `scsi_image.py` for the naming convention). The DPS eval drivers (`fid_eval_dps.py`, `lpips_eval_dps.py`) also load their baseline EDM checkpoint from `{results_root}/{modelfolder}/model-{model}.pt`.
 
-The SLURM scripts (`job-cifar10.sh`, `job-dist.sh`, `job-sample.sh`) are the canonical examples of invocation — copy flags from there rather than inventing new ones.
-
 ## Driver script → purpose map
 
 Top-level scripts are **thin argparse + config wrappers**, not libraries. The real logic is in `src/`. Each driver roughly wires together a dataset, a corruption function, a model, an interpolant/loss class, and a `Trainer`:
@@ -43,7 +41,7 @@ Top-level scripts are **thin argparse + config wrappers**, not libraries. The re
 - `scsi_distributed.py` — same, but DDP via `torchrun`.
 - `awgn.py` — specialization using `SCSInterpolantAWGN` for the additive-Gaussian-noise case.
 - `qsos.py` — 1-D quasar-spectra application; uses `KarrasUnet1D`.
-- `scsi_synthetic.py` — low-dim MLP experiments on 2-D synthetic distributions (`checker`, `moon`, `gmm`) using `FeedForwardwithEMB` + `Trainer`. Pulls distributions from `src/distribution.py` (streaming, not the registry); migrating to `get_dataset` for `two_moons` / `checkerboard` is pending.
+- `scsi_synthetic.py` — low-dim MLP experiments on 2-D synthetic distributions (`two_moons`, `checkerboard`) using `FeedForwardwithEMB` + `Trainer`; datasets are loaded through `get_dataset` and wrapped with `CorruptedDataset`.
 - `clean_interpolants.py` — produces "cleaned" samples from a trained interpolant (used as input to warm-start runs).
 - `fid_eval_*.py`, `lpips_eval_*.py`, `fid_eval_stage.py` — evaluation drivers; `_dps` variants benchmark diffusion posterior sampling baselines via `src/dps.py`.
 
@@ -57,7 +55,7 @@ The pipeline has four pluggable pieces; a driver picks one of each and hands the
 
 **2. Forward map (`forward_maps.py`).** `corruption_dict` registers every corruption as a **factory** that takes its levels and returns a callable `fwd(x, return_latents=..., cond_y=..., embed=...)`. `parse_latents(corruption, D, C, cond_y)` returns `(use_latents, latent_dim)` so the model knows its conditioning shape. When adding a corruption, register it here *and* extend `parse_latents`.
 
-**3. Model (`networks.py`, `karras_unet.py`, `karras_unet_1d.py`, `mlps.py`).** `networks.py` is vendored EDM code (NVIDIA); the key class used everywhere is `ConditionalDhariwalUNet`, which accepts `latent_dim` so the corruption's auxiliary output (mask, blurred image, k-space indices, …) can be injected as conditioning. `EDMPrecond` is the baseline wrapper used by `train.py`. 1-D variants live in `karras_unet_1d.py`. MLP experiments use `SimpleFeedForward`/`FeedForwardwithEMB` in `mlps.py` (project-authored, kept separate from the NVIDIA-licensed `networks.py`) and `MLPResNet` / `MLPVelocityField` in `networks.py` / `interpolant_utils.py`.
+**3. Model (`networks.py`, `karras_unet.py`, `karras_unet_1d.py`, `mlps.py`).** `networks.py` is vendored EDM code (NVIDIA); the key class used everywhere is `ConditionalDhariwalUNet`, which accepts `latent_dim` so the corruption's auxiliary output (mask, blurred image, k-space indices, …) can be injected as conditioning. `EDMPrecond` is the baseline wrapper used by `train.py`. 1-D variants live in `karras_unet_1d.py`. MLP experiments use `FeedForwardwithEMB` in `mlps.py` (project-authored, kept separate from the NVIDIA-licensed `networks.py`).
 
 **4. Interpolant + training loop (`interpolant_utils.py`, `trainer_si.py`).** `SCSInterpolant` (and variants `…Combined`, `…AWGN`) own the stochastic-interpolant loss, the transport step that produces pseudo-clean targets `x0` from corrupted `x`, and the ODE/SDE samplers (`euler`, `heun`). The key flags are:
 

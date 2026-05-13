@@ -2,7 +2,7 @@ import torch
 import sys, os
 import json
 import argparse
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
 from ema_pytorch import EMA
 import numpy as np
 

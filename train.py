@@ -6,7 +6,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src'))
 from networks import EDMPrecond
 from loss_functions import VELoss
 from custom_datasets import get_dataset, ImagesOnly, CombinedNumpyDataset
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
 from trainer import Trainer
 from utils import count_parameters
 from paths import default_data_root, default_results_root
@@ -67,4 +67,3 @@ np.save(f"{results_folder}/losses", losses)
 np.save(f"{results_folder}/fids", fids)
 print(losses[-1])
 print()
-

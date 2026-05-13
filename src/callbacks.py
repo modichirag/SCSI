@@ -24,7 +24,7 @@ def get_samples(b, interpolant, dataloader, device, validation_data, s=None):
 
 
 
-def save_image(idx, b, interpolant, dataloader, device, results_folder, losses, validation_data, s=None, **kargs):
+def save_image(idx, b, interpolant, dataloader, device, results_folder, losses, validation_data, s=None, **_kwargs):
 
     data, obs, latents, restored = get_samples(b, interpolant, dataloader, device, validation_data, s=s)
     to_show = [data, obs, restored]
@@ -46,7 +46,7 @@ def save_image(idx, b, interpolant, dataloader, device, results_folder, losses, 
     plt.close()
 
 
-def save_fig_2dsynt_vec(idx, b, interpolant, dataloader, device, results_folder, losses, validation_data, s=None, **kargs):
+def save_fig_2dsynt_vec(idx, b, interpolant, dataloader, device, results_folder, losses, validation_data, s=None, **_kwargs):
     clean, corrupted, latents, restored = get_samples(b, interpolant, dataloader, device, validation_data, s=s)
     push_fwd_func = interpolant.push_fwd
     c = '#62508f' # plot color
@@ -83,13 +83,12 @@ def save_fig_2dsynt_vec(idx, b, interpolant, dataloader, device, results_folder,
     plt.close()
 
 
-def save_fig_2dsynt_coeff(idx, b, interpolant, dataloader, device, results_folder, losses, validation_data, s=None, **kargs):
+def save_fig_2dsynt_coeff(idx, b, interpolant, dataloader, device, results_folder, losses, validation_data, s=None, **_kwargs):
     clean, corrupted, latents, restored = get_samples(b, interpolant, dataloader, device, validation_data, s=s)
     push_fwd_func = interpolant.push_fwd
 
     c = '#62508f' # plot color
     push_fwd_func = interpolant.push_fwd
-    # latents = kargs.get('latents', None)
     assert latents is not None, "Latents should be provided for this function"
     latents = latents.squeeze()
     assert latents.shape[-1] == 2, "Latents should be 2D for this function"

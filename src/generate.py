@@ -15,7 +15,6 @@ import tqdm
 import pickle
 import numpy as np
 import torch
-import PIL.Image
 import dnnlib
 from torch_utils import distributed as dist
 

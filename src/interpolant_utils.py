@@ -1,53 +1,6 @@
 import torch
 import math
-from networks import MLPResNet, PositionalEmbedding
 import numpy as np
-
-class VelocityField(torch.nn.Module):
-
-    def __init__(self, model, use_compile=False):
-        super().__init__()
-        self.model = model
-        self.use_compile = use_compile
-
-        if self.use_compile:
-            self.forward = torch.compile(self.forward)
-
-    def forward(self, x, t, latents=None):
-        return self.model(x, t, latents=latents)
-
-
-class MLPVelocityField(torch.nn.Module):
-    # a neural network that takes x in R^d and t in [0, 1] and outputs a a value in R^d
-
-    def __init__(self, d,  hidden_dim=512, depth=4, activation=torch.nn.SiLU, t_freq=64, latent_dim=None):
-        super(MLPVelocityField, self).__init__()
-
-        self.t_freq = t_freq
-        input_dim =  d + self.t_freq
-        if latent_dim is not None:
-            input_dim += self.t_freq
-        output_dim = d
-        if latent_dim is not None:
-            self.latent_net = MLPResNet(latent_dim[0], hidden_dim, t_freq, 2)
-        else:
-            self.latent_net = None
-        self.net = MLPResNet(input_dim, hidden_dim, output_dim, depth)
-        self.time_encoding = PositionalEmbedding(t_freq, max_positions=2)
-
-    def _single_forward(self, x, t, latents=None):
-        # t_encoded = fourier_encode(t, self.t_freq)  # [B, 2*n_freqs]
-        t_encoded = self.time_encoding(t.unsqueeze(0)).squeeze(0)  # [B, 2*n_freqs]
-        x_cond = torch.cat([x, t_encoded])
-        if self.latent_net is not None:
-            latents = self.latent_net(latents)
-            x_cond = torch.cat([x_cond, latents])
-        return self.net(x_cond)
-
-    def forward(self, x, t, latents=None):
-        if latents is None:
-            latents = t*0.
-        return torch.vmap(self._single_forward, in_dims=(0,0,0), out_dims=(0))(x, t, latents)
 
 
 class SCSInterpolant(torch.nn.Module):

@@ -112,8 +112,6 @@ Top-level drivers add `<repo>/src` to `sys.path` via a `__file__`-relative `sys.
 | `lpips_eval_interpolants.py`, `lpips_eval_dps.py` | LPIPS / PSNR / SSIM evaluation |
 | `clean_interpolants.py` | Produces "cleaned" samples from a trained interpolant |
 
-The SLURM scripts `job-cifar10.sh`, `job-dist.sh`, `job-sample.sh` are canonical invocation examples.
-
 ## Repository layout
 
 ```
