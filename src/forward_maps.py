@@ -21,7 +21,16 @@ def add_gaussian_noise(epsilon: float) -> callable:
 
 
 def random_mask_image(mask_ratio: float, epsilon: float, noise_mask=0.) -> callable:
-    """Returns a function that randomly masks out a fraction of pixels in an image."""
+    """Returns a function that randomly masks out a fraction of pixels in an image.
+
+    Args:
+        mask_ratio: probability that each pixel is masked, so ``1 - mask_ratio`` of pixels are kept.
+        epsilon:    std of Gaussian noise added uniformly across the whole image after masking.
+        noise_mask: if ``noise_mask > epsilon``, switches to the paper's masked-then-replaced-with-noise
+                    mode — kept pixels carry the clean signal with no noise, and masked pixels are
+                    replaced by Gaussian noise of std ``noise_mask`` (the signal is zeroed there).
+                    Paper setting on CIFAR: ``(mask_ratio, epsilon, noise_mask) = (0.5, 0.0, 1.0)``.
+    """
 
     def fwd(image: torch.Tensor, return_latents=False, generator=None, latents=None, cond_y=False, embed=False):
         """
@@ -34,7 +43,7 @@ def random_mask_image(mask_ratio: float, epsilon: float, noise_mask=0.) -> calla
         """
         if latents is not None:
             mask = latents
-        else:            
+        else:
             if image.dim() == 3:
                 # Single image
                 C, H, W = image.shape
@@ -216,7 +225,7 @@ def motion_blur(kernel_size, angle, epsilon):
         out += z * epsilon
         if was_3d:
             out = out.squeeze(0)
-            
+
         if cond_y:
             return out, out
         elif return_latents:
@@ -253,7 +262,7 @@ def random_motion(kernel_size, epsilon):
             angles = (latents *  torch.pi).squeeze(1).to(img.device)
             if was_3d:
                 angles = angles.unsqueeze(0)
-        else:        
+        else:
             angles = (torch.rand(batch_size, generator=generator) - 0.5) * 360.
             angles = torch.deg2rad(angles).to(img.device)  # Convert to radians
 
@@ -563,6 +572,19 @@ def compute_AtA_x(A: torch.Tensor, x: torch.Tensor) -> torch.Tensor:
     return torch.einsum('...ji,...jk,...k->...i', A, A, x)
 
 def random_projection_coeff(dim_out: float, epsilon: float) -> callable:
+    """Random linear projection returning the *coefficients* ``A x``, then padded back to
+    the ambient dimension with i.i.d. standard Gaussian noise.
+
+    Args:
+        dim_out: rank of the projection (cast to int). The forward map emits ``A x`` with
+            ``A`` of shape ``(dim_out, dim_in)`` and rows L2-normalized, then concatenates
+            ``dim_in - dim_out`` extra coordinates drawn from a standard Gaussian so the
+            returned tensor has the same shape as ``x``. This is *direct padding*: the
+            padding carries no information about ``x``, it is filler that lets downstream
+            networks see a fixed-shape input.
+        epsilon: std of Gaussian noise added to the ``dim_out`` projection coefficients
+            (the padded coordinates are noise to begin with).
+    """
     dim_out = int(dim_out)
     def fwd(x: torch.Tensor, return_latents=False, generator=None):
         """
@@ -601,6 +623,19 @@ def random_projection_coeff(dim_out: float, epsilon: float) -> callable:
     return fwd
 
 def random_projection_vec(dim_out: float, epsilon: float) -> callable:
+    """Random linear projection returning the *adjoint embedding* ``A^T A x``, which lives
+    natively in the ambient space of ``x``.
+
+    Args:
+        dim_out: rank of the projection (cast to int). With ``A`` of shape
+            ``(dim_out, dim_in)`` and rows L2-normalized, the forward map returns
+            ``A^T A x``. Unlike :func:`random_projection_coeff`, no padding is required:
+            ``A^T y`` always has the same dimension as ``x``. The same property holds for
+            the Jacobian transpose ``(\\nabla_x F)^T y`` of a general nonlinear operator
+            ``F``, which makes this representation a useful linear stand-in when the
+            downstream pipeline is meant to generalize beyond linear forward maps.
+        epsilon: std of Gaussian noise added to ``A^T A x`` in the ambient space.
+    """
     dim_out = int(dim_out)
     # for testing on fixed A
     A_base = torch.randn(1, dim_out, 2, device='cuda')
@@ -680,5 +715,5 @@ def parse_latents(corruption, D, C=3, s=None, cond_y=False):
         else:
             use_latents = False
             latent_dim = None
-            
+
     return use_latents, latent_dim

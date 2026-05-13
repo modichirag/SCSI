@@ -39,7 +39,7 @@ A tiny U-Net trained on 50%-masked MNIST. Runs in a couple of minutes on a singl
 python -u scsi_image.py \
     --dataset mnist \
     --corruption random_mask \
-    --corruption_levels 0.5 0.0 \
+    --corruption_levels 0.5 0.0 1.0 \
     --train_steps 100 \
     --channels 32 \
     --ode_steps 64 \
@@ -50,9 +50,9 @@ python -u scsi_image.py \
     --suffix test
 ```
 
-Other settings use driver defaults; for `random_mask`, omitting a third corruption level means the masked-region noise parameter defaults to `0.0`.
+`--corruption_levels` are positional `(mask_ratio, epsilon, noise_mask)`: 50% of pixels are masked, kept pixels carry no extra observation noise (`epsilon=0.0`), and masked pixels are replaced by standard Gaussian noise (`noise_mask=1.0`). This matches the paper convention.
 
-Outputs land under `./results/singleview/mnist-random_mask-0.50-0.00-test/`. `tests/test_image.py` runs a much smaller configuration as a wiring check.
+Outputs land under `./results/singleview/mnist-random_mask-0.50-0.00-1.00-test/`. `tests/test_image.py` runs a much smaller configuration as a wiring check.
 
 ## A real example: CIFAR-10 with random masking
 
