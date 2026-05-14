@@ -46,87 +46,60 @@ def save_image(idx, b, interpolant, dataloader, device, results_folder, losses, 
     plt.close()
 
 
-def save_fig_2dsynt_vec(idx, b, interpolant, dataloader, device, results_folder, losses, validation_data, s=None, **_kwargs):
+def save_fig_2dsynt_projection(idx, b, interpolant, dataloader, device, results_folder, losses, validation_data, s=None, corruption_name=None, **_kwargs):
+    # 4-panel scatter for 2D synthetic datasets (two_moons, checkerboard) under
+    # projection_{coeff,vec}. All forward maps in this family return corrupted
+    # samples of shape (N, dim_in=2), so panels Clean/Restored always scatter
+    # directly. For Corrupted/Restored-corrupted: projection_vec and full-rank
+    # coeff are scattered directly; projection_coeff with dim_out=1 overrides
+    # the y-axis with the angle of A (atan2 of the unit direction), since the
+    # raw second coord of y is just random Gaussian padding and uninformative.
     clean, corrupted, latents, restored = get_samples(b, interpolant, dataloader, device, validation_data, s=s)
     push_fwd_func = interpolant.push_fwd
-    c = '#62508f' # plot color
-    fig, axes = plt.subplots(1,4, figsize=(20, 5))
+    c = '#62508f'
+
+    use_angle = (corruption_name == "projection_coeff"
+                 and latents is not None and latents.shape[-2] == 1)
+
+    def panel_xy(y, A):
+        if use_angle:
+            A_sq = A.squeeze(-2)
+            angle = torch.atan2(A_sq[:, 1], A_sq[:, 0])
+            return grab(y[:, 0]), grab(angle)
+        y_np = grab(y)
+        return y_np[:, 0], y_np[:, 1]
 
     clean = grab(clean)
-    corrupted = grab(corrupted)
     restored = grab(restored)
-
-    axes[0].scatter(clean[:,0], clean[:,1], alpha = 0.03, c = c)
-    axes[0].set_title(r"Clean samples", fontsize = 18)
-    axes[0].set_xlim(-6,6), axes[0].set_ylim(-6,6)
-    axes[0].set_xticks([-4,0,4]), axes[0].set_yticks([-4,0,4])
-
-    axes[1].scatter(corrupted[:,0], corrupted[:,1], alpha = 0.03, c = c)
-    axes[1].set_title(r"Corrupted samples", fontsize = 18)
-    axes[1].set_xlim(-6,6), axes[2].set_ylim(-6,6)
-    axes[1].set_xticks([-4,0,4]), axes[2].set_yticks([]);
-
-    axes[2].scatter(restored[:,0], restored[:,1], alpha = 0.03, c = c)
-    axes[2].set_title(r"Restored samples ", fontsize = 18)
-    axes[2].set_xlim(-6,6), axes[1].set_ylim(-6,6)
-    axes[2].set_xticks([-4,0,4]), axes[1].set_yticks([])
-
-    restored_corrupted = push_fwd_func(torch.from_numpy(restored)).numpy()
-    axes[3].scatter(restored_corrupted[:,0], restored_corrupted[:,1], alpha = 0.03, c = c)
-    axes[3].set_title(r"Restored corrupted samples ", fontsize = 18)
-    axes[3].set_xlim(-6,6), axes[3].set_ylim(-6,6)
-    axes[3].set_xticks([-4,0,4]), axes[3].set_yticks([])
-
-    plt.subplots_adjust(wspace=0.0, hspace=0.0)  # Reduce spacing
-    # plt.tight_layout()
-    plt.savefig(f'{results_folder}/denoising_{idx}.png', dpi=300)
-    plt.close()
-
-
-def save_fig_2dsynt_coeff(idx, b, interpolant, dataloader, device, results_folder, losses, validation_data, s=None, **_kwargs):
-    clean, corrupted, latents, restored = get_samples(b, interpolant, dataloader, device, validation_data, s=s)
-    push_fwd_func = interpolant.push_fwd
-
-    c = '#62508f' # plot color
-    push_fwd_func = interpolant.push_fwd
-    assert latents is not None, "Latents should be provided for this function"
-    latents = latents.squeeze()
-    assert latents.shape[-1] == 2, "Latents should be 2D for this function"
-    angles_rad = grab(torch.atan2(latents[:, 1], latents[:, 0]))
-    fig, axes = plt.subplots(1, 4, figsize=(20, 5))
-    # if push_fwd_func is None:
-    #     fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-    # else:
-    #     fig, axes = plt.subplots(1, 4, figsize=(20, 5))
-    clean = grab(clean)
-    corrupted = grab(corrupted)
-    restored = grab(restored)
-
-    axes[0].scatter(clean[:,0], clean[:,1], alpha = 0.03, c = c)
-    axes[0].set_title(r"Clean samples", fontsize = 18)
-    axes[0].set_xlim(-6,6), axes[0].set_ylim(-6,6)
-    axes[0].set_xticks([-4,0,4]), axes[0].set_yticks([-4,0,4])
-
-    axes[1].scatter(corrupted[:,0], angles_rad, alpha = 0.03, c = c)
-    axes[1].set_title(r"Corrupted samples", fontsize = 18)
-    axes[1].set_xlim(-6,6), axes[2].set_ylim(-6,6)
-    axes[1].set_xticks([-4,0,4]), axes[2].set_yticks([]);
-
-    axes[2].scatter(restored[:,0], restored[:,1], alpha = 0.03, c = c)
-    axes[2].set_title(r"Restored samples ", fontsize = 18)
-    axes[2].set_xlim(-6,6), axes[1].set_ylim(-6,6)
-    axes[2].set_xticks([-4,0,4]), axes[1].set_yticks([])
+    cor_x, cor_y = panel_xy(corrupted, latents)
 
     restored_corrupted, latents_new = push_fwd_func(torch.from_numpy(restored), return_latents=True)
-    restored_corrupted = grab(restored_corrupted)
-    latents_new = latents_new.squeeze()
-    angles_rad_new = grab(torch.atan2(latents_new[:, 1], latents_new[:, 0]))
-    axes[3].scatter(restored_corrupted[:,0], angles_rad_new, alpha = 0.03, c = c)
-    axes[3].set_title(r"Restored corrupted samples ", fontsize = 18)
-    axes[3].set_xlim(-6,6), axes[3].set_ylim(-6,6)
-    axes[3].set_xticks([-4,0,4]), axes[3].set_yticks([])
+    rc_x, rc_y = panel_xy(restored_corrupted, latents_new)
 
-    plt.subplots_adjust(wspace=0.0, hspace=0.0)  # Reduce spacing
+    def style_ambient(ax):
+        ax.set_xlim(-6, 6); ax.set_ylim(-6, 6)
+        ax.set_xticks([-4, 0, 4]); ax.set_yticks([-4, 0, 4])
+
+    def style_angle(ax):
+        ax.set_xlim(-6, 6); ax.set_ylim(-3.3, 3.3)
+        ax.set_xticks([-4, 0, 4]); ax.set_yticks([-3, 0, 3])
+
+    style_corrupted = style_angle if use_angle else style_ambient
+
+    fig, axes = plt.subplots(1, 4, figsize=(20, 5))
+    axes[0].scatter(clean[:, 0], clean[:, 1], alpha=0.03, c=c)
+    axes[0].set_title("Clean samples", fontsize=18); style_ambient(axes[0])
+
+    axes[1].scatter(cor_x, cor_y, alpha=0.03, c=c)
+    axes[1].set_title("Corrupted samples", fontsize=18); style_corrupted(axes[1])
+
+    axes[2].scatter(restored[:, 0], restored[:, 1], alpha=0.03, c=c)
+    axes[2].set_title("Restored samples", fontsize=18); style_ambient(axes[2])
+
+    axes[3].scatter(rc_x, rc_y, alpha=0.03, c=c)
+    axes[3].set_title("Restored corrupted samples", fontsize=18); style_corrupted(axes[3])
+
+    plt.subplots_adjust(wspace=0.0, hspace=0.0)
     plt.savefig(f'{results_folder}/denoising_{idx}.png', dpi=300)
     plt.close()
 

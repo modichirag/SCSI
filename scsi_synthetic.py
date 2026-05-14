@@ -3,13 +3,14 @@ import torch
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.set_float32_matmul_precision('high')
 import json
+from functools import partial
 
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src'))
 from utils import count_parameters, make_serializable
 from mlps import FeedForwardwithEMB
 from custom_datasets import get_dataset, CorruptedDataset
 from interpolant_utils import SCSInterpolant
-from callbacks import save_fig_2dsynt_coeff, save_fig_2dsynt_vec
+from callbacks import save_fig_2dsynt_projection
 from trainer_si import Trainer
 from paths import default_data_root, default_results_root
 import forward_maps as fwd_maps
@@ -93,10 +94,7 @@ if args.dataset in ["two_moons", "checkerboard"]:
     clean_dataset, _, _ = get_dataset(args.dataset, args.data_root, seed=args.dataset_seed, n_samples=args.n_samples)
     dataset = CorruptedDataset(clean_dataset, fwd_func, tied_rng=False)
     dataloader = None
-    if args.corruption.startswith("projection_coeff"):
-        save_fig_fn = save_fig_2dsynt_coeff
-    else:
-        save_fig_fn = save_fig_2dsynt_vec
+    save_fig_fn = partial(save_fig_2dsynt_projection, corruption_name=args.corruption)
     clean_data_valid = clean_dataset.array.to(device)
 else:
     raise ValueError(f"Unknown dataset: {args.dataset}")
@@ -106,11 +104,7 @@ if args.corruption.startswith("projection") and use_latents:
     latent_dim = dim_in * int(args.corruption_levels[0])
 else:
     latent_dim = None
-if args.corruption == "projection_coeff" and dim_in == int(args.corruption_levels[0]):
-    corrupted_valid_plot = torch.linalg.solve(latents_valid, corrupted_valid)
-else:
-    corrupted_valid_plot = corrupted_valid
-valid_data_plot = (clean_data_valid, corrupted_valid_plot, latents_valid)
+valid_data_plot = (clean_data_valid, corrupted_valid, latents_valid)
 
 b =  FeedForwardwithEMB(dim_in, args.t_emb_dim, [args.fc_width]*args.fc_depth, latent_dim=latent_dim).to(device)
 print("Parameter count : ", count_parameters(b))
