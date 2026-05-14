@@ -156,8 +156,16 @@ if args.load_model_path:
 print("Parameter count : ", count_parameters(b))
 #b = torch.compile(b)
 
-# Corruption
-corrupt_fn = partial(fwd_func, cond_y=args.cond_y, embed=args.embed)
+# Corruption: only pre-bind kwargs the user explicitly opts into, since not
+# every forward map in `corruption_dict` lists `cond_y` / `embed` in its inner
+# `fwd` signature. Unconditionally passing them via `partial` raised TypeError
+# on those maps even with default `False`.
+_extra_kwargs = {}
+if args.cond_y:
+    _extra_kwargs["cond_y"] = True
+if args.embed:
+    _extra_kwargs["embed"] = True
+corrupt_fn = partial(fwd_func, **_extra_kwargs) if _extra_kwargs else fwd_func
 if args.combinedsde:
     interpolant = SCSInterpolantCombined(corrupt_fn, use_latents=use_latents, \
                                         alpha=args.alpha, resamples=args.resamples, n_steps=args.ode_steps, \
