@@ -7,7 +7,7 @@ import json
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src'))
 from utils import count_parameters, make_serializable
 from custom_datasets import get_dataset, ImagesOnly, CorruptedDataset
-from paths import default_data_root, default_results_root
+from paths import default_data_root, default_results_root, view_root, build_run_slug
 from networks import ConditionalDhariwalUNet
 from interpolant_utils import SCSInterpolantAWGN
 import forward_maps as fwd_maps
@@ -55,7 +55,7 @@ parser.add_argument("--n_transports", type=int, default=1, help="update transpor
 args = parser.parse_args()
 print(args)
 
-BASEPATH = os.path.join(args.results_root, 'multiview' if args.multiview else 'singleview')
+BASEPATH = view_root(args)
 
 # Parse arguments
 dataset, D, nc = get_dataset(args.dataset, args.data_root, seed=args.dataset_seed)
@@ -83,17 +83,12 @@ try:
 except Exception as e:
     print("Exception in loading corruption function : ", e)
     sys.exit()
-cname = "-".join([f"{i:0.2f}" for i in corruption_levels])
-print(f"Corruption name for levels {corruption_levels}: ", cname)
-folder = f"{args.dataset}-{corruption}-{cname}"
-if args.cleansteps != -1: folder = f"{folder}-cds{args.cleansteps}"
-if args.transport_steps != 1: folder = f"{folder}-tr{args.transport_steps}"
-if args.smodel: folder = f"{folder}-sde"
-if args.sampler != 'euler': folder = f"{folder}-{args.sampler}"
-if args.combinedsde: folder = f"{folder}-combined"
-if args.prefix != "": folder = f"{args.prefix}-{folder}"
-if args.suffix != "": folder = f"{folder}-{args.suffix}"
-folder = f"{folder}-awgn"
+folder = build_run_slug(
+    args,
+    tokens=("cds", "tr", "sde", "sampler", "combined"),
+    awgn=True,
+)
+print(f"Corruption name for levels {corruption_levels}: ", folder)
 results_folder = f"{BASEPATH}/{folder}/"
 os.makedirs(results_folder, exist_ok=True)
 print(f"Results will be saved in folder: {results_folder}")

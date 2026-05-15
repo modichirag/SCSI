@@ -10,7 +10,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src'))
 from networks import ConditionalDhariwalUNet
 from custom_datasets import get_dataset, ImagesOnly, cifar10_inverse_transforms
 from interpolant_utils import SCSInterpolant
-from paths import default_data_root, default_results_root
+from paths import default_data_root, default_results_root, view_root, build_run_slug
 import forward_maps as fwd_maps
 import lpips
 from utils import infinite_dataloader,  num_to_groups, remove_orig_mod_prefix
@@ -42,7 +42,7 @@ parser.add_argument("--multiview", action='store_true', help="change corruption 
 parser.add_argument("--max_pos_embedding", type=int, default=2, help="number of resamplings")
 args = parser.parse_args()
 print(args)
-BASEPATH = os.path.join(args.results_root, 'multiview' if args.multiview else 'singleview')
+BASEPATH = view_root(args)
 
 # Parse arguments
 dataset, D, nc = get_dataset(args.dataset, args.data_root)
@@ -62,13 +62,8 @@ try:
 except Exception as e:
     print("Exception in loading corruption function : ", e)
     sys.exit()
-cname = "-".join([f"{i:0.2f}" for i in corruption_levels])
-folder = f"{args.dataset}-{corruption}-{cname}"
-if args.prefix != "": folder = f"{args.prefix}-{folder}"
-if args.suffix != "": folder = f"{folder}-{args.suffix}"
-if args.subfolder != "": folder = f"{folder}/{args.subfolder}/"
-
-folder = f"{BASEPATH}/{folder}/"
+slug = build_run_slug(args, subfolder=True)
+folder = f"{BASEPATH}/{slug}/"
 results_folder = f"{folder}/results"
 os.makedirs(results_folder, exist_ok=True)
 print(f"Models will be loaded from folder: {folder}")

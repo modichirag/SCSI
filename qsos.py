@@ -13,7 +13,7 @@ from utils import count_parameters, make_serializable
 from karras_unet_1d import KarrasUnet1D, PixelUnShuffle1D
 from custom_datasets import  NumpyArrayDataset, CorruptedDataset, get_dataset
 from interpolant_utils import SCSInterpolant, SCSInterpolantCombined
-from paths import default_data_root, default_results_root
+from paths import default_data_root, default_results_root, view_root, build_run_slug
 from trainer_si import Trainer, get_worker_info
 from quasars import qso_model,  qso_dataloader, qso_callback
 import argparse
@@ -54,7 +54,7 @@ parser.add_argument("--z_max", type=float, default=3.25, help="QSO redshift uppe
 args = parser.parse_args()
 print(args)
 
-BASEPATH = os.path.join(args.results_root, 'multiview' if args.multiview else 'singleview')
+BASEPATH = view_root(args)
 print(BASEPATH)
 
 # Initialize DDP
@@ -109,19 +109,12 @@ fwd_func = qso_model(wavelength, downsample_factor=downsample_factor, \
 use_latents, latent_dim = False, None
 
 
-# Folder name 
-folder = f"qso_res-{idloglamb}_snr-{min_snr}-{max_snr}"
-if args.cleansteps != -1: folder = f"{folder}-cds{args.cleansteps}"
-if args.transport_steps != 1: folder = f"{folder}-tr{args.transport_steps}"
-if args.smodel: folder = f"{folder}-sde"
-if args.gamma_scale != 0: folder = f"{folder}-g{args.gamma_scale:0.2f}"
-#if args.diffusion_coeff != 0: folder = f"{folder}-dc{args.diffusion_coeff:0.3f}"
-if args.smodel: folder = f"{folder}-dc{args.diffusion_coeff:0.3f}"
-if args.sampler != 'euler': folder = f"{folder}-{args.sampler}"
-if args.randomize_t: folder = f"{folder}-randt"
-if args.combinedsde: folder = f"{folder}-combined"
-if args.prefix != "": folder = f"{args.prefix}-{folder}"
-if args.suffix != "": folder = f"{folder}-{args.suffix}"
+# Folder name
+folder = build_run_slug(
+    args,
+    base=f"qso_res-{idloglamb}_snr-{min_snr}-{max_snr}",
+    tokens=("cds", "tr", "sde", "g_2f", "dc", "sampler", "randt", "combined"),
+)
 results_folder = f"{BASEPATH}/{folder}/"
 os.makedirs(results_folder, exist_ok=True)
 args_dict = make_serializable(vars(args) if isinstance(args, argparse.Namespace) else args)

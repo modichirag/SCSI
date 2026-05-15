@@ -10,7 +10,7 @@ import json
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src'))
 from utils import count_parameters, make_serializable
 from custom_datasets import get_dataset, ImagesOnly, CorruptedDataset
-from paths import default_data_root, default_results_root
+from paths import default_data_root, default_results_root, view_root, build_run_slug
 from networks import ConditionalDhariwalUNet
 from interpolant_utils import SCSInterpolant
 import forward_maps as fwd_maps
@@ -47,7 +47,7 @@ parser.add_argument("--transport_steps", type=int, default=1, help="update trans
 args = parser.parse_args()
 print(args)
 
-BASEPATH = os.path.join(args.results_root, 'multiview' if args.multiview else 'singleview')
+BASEPATH = view_root(args)
 
 
 # Initialize DDP
@@ -91,11 +91,8 @@ if use_latents:
     print("Will use latents of dimension: ", latent_dim)
 
 # Folder name
-cname = "-".join([f"{i:0.2f}" for i in corruption_levels])
-print(f"Corruption name for levels {corruption_levels}: ", cname)
-folder = f"{args.dataset}-{corruption}-{cname}"
-if args.prefix != "": folder = f"{args.prefix}-{folder}"
-if args.suffix != "": folder = f"{folder}-{args.suffix}"
+folder = build_run_slug(args)
+print(f"Corruption name for levels {corruption_levels}: ", folder)
 results_folder = f"{BASEPATH}/{folder}/"
 os.makedirs(results_folder, exist_ok=True)
 print(f"Results will be saved in folder: {results_folder}")

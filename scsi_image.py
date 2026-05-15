@@ -7,7 +7,7 @@ import json
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src'))
 from utils import count_parameters, make_serializable
 from custom_datasets import get_dataset, ImagesOnly, CorruptedDataset
-from paths import default_data_root, default_results_root
+from paths import default_data_root, default_results_root, view_root, build_run_slug
 from networks import ConditionalDhariwalUNet
 from interpolant_utils import SCSInterpolant,  SCSInterpolantCombined
 import forward_maps as fwd_maps
@@ -59,7 +59,7 @@ parser.add_argument("--embed", action='store_true', help="save transport maps on
 args = parser.parse_args()
 print(args)
 
-BASEPATH = os.path.join(args.results_root, 'multiview' if args.multiview else 'singleview')
+BASEPATH = view_root(args)
 
 # Parse arguments
 dataset, D, nc = get_dataset(args.dataset, args.data_root, seed=args.dataset_seed)
@@ -85,26 +85,12 @@ try:
 except Exception as e:
     print("Exception in loading corruption function : ", e)
     sys.exit()
-cname = "-".join([f"{i:0.2f}" for i in corruption_levels])
-print(f"Corruption name for levels {corruption_levels}: ", cname)
-folder = f"{args.dataset}-{corruption}-{cname}"
-if args.cleansteps != -1: folder = f"{folder}-cds{args.cleansteps}"
-if args.transport_steps != 1: folder = f"{folder}-tr{args.transport_steps}"
-if args.smodel: folder = f"{folder}-sde"
-if args.gamma_scale != 0:
-    if args.gamma_scale  < 0.01:
-        folder = f"{folder}-g{args.gamma_scale:0.3f}"
-    else:
-        folder = f"{folder}-g{args.gamma_scale:0.2f}"
-#if args.diffusion_coeff != 0: folder = f"{folder}-dc{args.diffusion_coeff:0.3f}"
-if args.smodel: folder = f"{folder}-dc{args.diffusion_coeff:0.3f}"
-if args.sampler != 'euler': folder = f"{folder}-{args.sampler}"
-if args.randomize_t: folder = f"{folder}-randt"
-if args.combinedsde: folder = f"{folder}-combined"
-if args.cond_y: folder = f"{folder}-condy"
-if args.embed: folder = f"{folder}-embed"
-if args.prefix != "": folder = f"{args.prefix}-{folder}"
-if args.suffix != "": folder = f"{folder}-{args.suffix}"
+folder = build_run_slug(
+    args,
+    tokens=("cds", "tr", "sde", "g_gated", "dc",
+            "sampler", "randt", "combined", "condy", "embed"),
+)
+print(f"Corruption name for levels {corruption_levels}: ", folder)
 results_folder = f"{BASEPATH}/{folder}/"
 os.makedirs(results_folder, exist_ok=True)
 print(f"Results will be saved in folder: {results_folder}")
