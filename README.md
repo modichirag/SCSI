@@ -2,7 +2,7 @@
 
 Official implementation of **Generative Modeling from Black-box Corruptions via Self-Consistent Stochastic Interpolants** (Chirag Modi, Jiequn Han, Eric Vanden-Eijnden, Joan Bruna — ICLR 2026). [[link]](https://arxiv.org/abs/2512.10857)
 
-Research code for training generative models (diffusion / stochastic interpolants) from **corrupted** observations — i.e. learning a clean-data prior when only degraded samples are available. Corruptions include Gaussian noise, random/block masking, Gaussian/motion blur, JPEG compression, and random projections. Targets CIFAR-10, MNIST, CelebA, SDSS DR16 quasar spectra (1-D), and the 2-D synthetic `two_moons` distribution.
+Research code for training generative models (stochastic interpolants) from **corrupted** observations — i.e. learning an generative model for clean-data distribution when only degraded samples are available. Corruptions include Gaussian noise, random/block masking, Gaussian/motion blur, JPEG compression, and random projections. Tested on CIFAR-10, MNIST, CelebA, SDSS DR16 quasar spectra (1-D), and the 2-D synthetic distribution.
 
 ## Installation
 
@@ -31,9 +31,9 @@ Other settings use driver defaults, including `batch_size=2000`, `fc_width=256`,
 
 Outputs (loss curve, intermediate denoising snapshots, final model) land under `./results/two_moons-gaussian_noise-0.50-test/`. `tests/test_synthetic.py` runs a much smaller configuration as a wiring check.
 
-## Quickstart: MNIST with random masking
+## Quickstart: MNIST under various corruptions
 
-A tiny U-Net trained on 50%-masked MNIST. Runs in a couple of minutes on a single GPU and exercises the image training pipeline end-to-end.
+A tiny U-Net trained on MNIST. Each setting runs in a couple of minutes on a single A100 GPU at smoke-test scale (`train_steps=100`) and already produces visually reasonable restorations — handy for exploring how the method behaves under different forward models without committing to a paper-tier run.
 
 ```bash
 python -u scsi_image.py \
@@ -50,9 +50,21 @@ python -u scsi_image.py \
     --suffix test
 ```
 
-`--corruption_levels` are positional `(mask_ratio, epsilon, noise_mask)`: 50% of pixels are masked, kept pixels carry no extra observation noise (`epsilon=0.0`), and masked pixels are replaced by standard Gaussian noise (`noise_mask=1.0`). This matches the paper convention.
+For `random_mask`, the three positional levels are `(mask_ratio, epsilon, noise_mask)`: 50% of pixels are masked, kept pixels carry no extra observation noise (`epsilon=0.0`), and masked pixels are replaced by standard Gaussian noise (`noise_mask=1.0`). This matches the paper convention.
 
-Outputs land under `./results/singleview/mnist-random_mask-0.50-0.00-1.00-test/`. `tests/test_image.py` runs a much smaller configuration as a wiring check.
+To try a different forward model, swap the `--corruption` / `--corruption_levels` pair — all other flags can stay the same:
+
+| `--corruption`         | `--corruption_levels` | Argument semantics                       |
+|---|---|---|
+| `random_mask`          | `0.5 0.0 1.0`         | `(mask_ratio, epsilon, noise_mask)`      |
+| `gaussian_noise`       | `0.5`                 | `(sigma,)`                               |
+| `gaussian_blur`        | `1.0 0.1`             | `(sigma_R, sigma_n)`                     |
+| `gaussian_blur_pnoise` | `1.0 0.1`             | `(sigma_R, lambda_n)` — Poisson rate     |
+| `random_motion`        | `5.0 0.1`             | `(kernel_size, sigma_n)`                 |
+
+`jpeg_compress` is RGB-only (uses YCbCr decomposition) and is skipped for MNIST; on CIFAR-10 it takes levels `(10, 100, 0.01)` = `(min_quality, max_quality, sigma_n)`.
+
+Outputs land under `./results/singleview/mnist-<corruption>-<levels>-test/`. `tests/test_image.py` runs a much smaller configuration as a wiring check.
 
 ## A real example: CIFAR-10 with random masking
 
@@ -78,7 +90,7 @@ Two environment variables (also exposed as CLI flags) control where data and out
 
 | Variable | CLI flag | Default | Purpose |
 |---|---|---|---|
-| `SCSI_DATA` | `--data_root` | `./data` | Dataset caches (MNIST, CIFAR-10, CelebA, synthetic, QSO) |
+| `SCSI_DATA` | `--data_root` | `./data` | Dataset caches (MNIST, CIFAR-10, synthetic) |
 | `SCSI_RESULTS` | `--results_root` | `./results` | Training outputs, `model-best.pt`, logs |
 
 ## Datasets
@@ -86,15 +98,7 @@ Two environment variables (also exposed as CLI flags) control where data and out
 All drivers pull data via `get_dataset(name, data_root, seed=42)` from `src/custom_datasets.py`. Supported names:
 
 - `mnist`, `cifar10` — downloaded via `torchvision` on first call.
-- `celebA` — **not auto-downloaded**; place `img_align_celeba/` under `$SCSI_DATA/celebA/`.
 - `two_moons` — synthetic; cached under `$SCSI_DATA/two_moons/seed_<seed>/`.
-- `qso` — SDSS DR16 quasar spectra; downloaded via `src/qso_download.py` on first call (small default: 1000 spectra in redshift range 2.75–3.25; configurable via `--max_spectra`, `--z_min`, `--z_max` on `qsos.py`). Requires `astropy`.
-
-To pre-download the QSO cache:
-
-```bash
-python scripts/download_qso.py --data-root ./data --max-spectra 1000
-```
 
 ## Driver map
 
@@ -106,7 +110,6 @@ Top-level drivers add `<repo>/src` to `sys.path` via a `__file__`-relative `sys.
 | `scsi_image.py` | Single-GPU training from corrupted images |
 | `scsi_distributed.py` | DDP variant via `torchrun` |
 | `awgn.py` | Specialization for the additive-Gaussian-noise case |
-| `qsos.py` | 1-D quasar-spectra variant; uses `KarrasUnet1D` |
 | `train.py`, `sample.py`, `fid_eval.py` | Plain EDM diffusion baseline (clean data only) |
 | `fid_eval_interpolants.py`, `fid_eval_awgn.py`, `fid_eval_dps.py` | FID evaluation of trained interpolants / DPS baseline |
 | `lpips_eval_interpolants.py`, `lpips_eval_dps.py` | LPIPS / PSNR / SSIM evaluation |
@@ -116,15 +119,13 @@ Top-level drivers add `<repo>/src` to `sys.path` via a `__file__`-relative `sys.
 
 ```
 src/                          # Library code — not an installable package yet
-  custom_datasets.py          # Dataset registry, CorruptedDataset, QSODataset
+  custom_datasets.py          # Dataset registry, CorruptedDataset
   forward_maps.py             # Corruption factories (corruption_dict)
   interpolant_utils.py        # SCSInterpolant and variants
   trainer_si.py               # Production training loop (EMA, DDP, checkpointing)
   trainer.py                  # Older/simpler loop used by train.py (EDM baseline)
   networks.py, karras_unet*.py, mlps.py
   paths.py                    # SCSI_DATA / SCSI_RESULTS resolution
-  qso_download.py             # SDSS DR16 spectra downloader
-scripts/                      # CLI wrappers (currently just QSO download)
 ```
 
 Top-level `*.py` files are thin argparse + config wrappers around `src/`.

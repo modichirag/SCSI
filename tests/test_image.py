@@ -38,7 +38,7 @@ def main():
         data_root=data_root,
         results_folder=results_folder,
         corruption="random_mask",
-        corruption_levels=[0.5, 0.0],
+        corruption_levels=[0.5, 0.0, 1.0],
         cond_y=False,
         embed=False,
         train_steps=6,
