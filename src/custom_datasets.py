@@ -240,19 +240,6 @@ def _fetch_two_moons(data_root, seed=42, n_samples=10000, noise=0.1):
     return SyntheticDataset(np.load(cache))
 
 
-def _fetch_checkerboard(data_root, seed=42, n_samples=10000):
-    cache = Path(data_root) / "checkerboard" / f"seed_{seed}" / f"n_{n_samples}.npy"
-    if not cache.exists():
-        cache.parent.mkdir(parents=True, exist_ok=True)
-        gen = torch.Generator().manual_seed(seed)
-        x1 = torch.rand(n_samples, generator=gen) * 4 - 2
-        x2_ = torch.rand(n_samples, generator=gen) - torch.randint(2, (n_samples,), generator=gen) * 2
-        x2 = x2_ + (torch.floor(x1) % 2)
-        X = (torch.cat([x1[:, None], x2[:, None]], dim=1) * 2).numpy().astype(np.float32)
-        np.save(cache, X)
-    return SyntheticDataset(np.load(cache))
-
-
 class QSODataset(Dataset):
     """QSO spectra dataset.
 
@@ -286,7 +273,6 @@ DATASETS = {
     "cifar10":      {"fetch": _fetch_cifar10,      "D": 32,   "nc": 3},
     "celebA":       {"fetch": _fetch_celebA,       "D": 64,   "nc": 3},
     "two_moons":    {"fetch": _fetch_two_moons,    "D": 2,    "nc": 1},
-    "checkerboard": {"fetch": _fetch_checkerboard, "D": 2,    "nc": 1},
     "qso":          {"fetch": _fetch_qso,          "D": 2999, "nc": 1},
 }
 

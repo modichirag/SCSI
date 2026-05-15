@@ -20,7 +20,7 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print("DEVICE : ", device)
 
 parser = argparse.ArgumentParser(description="")
-parser.add_argument("--dataset", type=str, default="two_moons", help="dataset (two_moons, checkerboard)")
+parser.add_argument("--dataset", type=str, default="two_moons", help="dataset (two_moons)")
 parser.add_argument("--data_root", type=str, default=default_data_root(), help="root dir for dataset caches (default: $SCSI_DATA or ./data)")
 parser.add_argument("--dataset_seed", type=int, default=42, help="seed for synthetic dataset generation")
 parser.add_argument("--n_samples", type=int, default=10000, help="number of synthetic samples to generate/cache")
@@ -89,7 +89,7 @@ interpolant = SCSInterpolant(
     diffusion_coeff=0.0,
     gamma_scale=args.gamma_scale
 ).to(device)
-if args.dataset in ["two_moons", "checkerboard"]:
+if args.dataset == "two_moons":
     dim_in = 2
     clean_dataset, _, _ = get_dataset(args.dataset, args.data_root, seed=args.dataset_seed, n_samples=args.n_samples)
     dataset = CorruptedDataset(clean_dataset, fwd_func, tied_rng=False)

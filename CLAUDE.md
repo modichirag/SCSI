@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository purpose
 
-Research code for training generative models (diffusion / stochastic interpolants) from **corrupted** observations — i.e. learning a clean-data prior when only degraded samples are available. Corruptions include Gaussian noise, random/block masking, Gaussian/motion blur, JPEG compression, and random projections. Targets CIFAR-10, MNIST, CelebA, quasar spectra (1-D), and 2-D synthetic distributions (two_moons, checkerboard).
+Research code for training generative models (diffusion / stochastic interpolants) from **corrupted** observations — i.e. learning a clean-data prior when only degraded samples are available. Corruptions include Gaussian noise, random/block masking, Gaussian/motion blur, JPEG compression, and random projections. Targets CIFAR-10, MNIST, CelebA, quasar spectra (1-D), and the 2-D synthetic two_moons distribution.
 
 ## Running scripts
 
@@ -41,7 +41,7 @@ Top-level scripts are **thin argparse + config wrappers**, not libraries. The re
 - `scsi_distributed.py` — same, but DDP via `torchrun`.
 - `awgn.py` — specialization using `SCSInterpolantAWGN` for the additive-Gaussian-noise case.
 - `qsos.py` — 1-D quasar-spectra application; uses `KarrasUnet1D`.
-- `scsi_synthetic.py` — low-dim MLP experiments on 2-D synthetic distributions (`two_moons`, `checkerboard`) using `FeedForwardwithEMB` + `Trainer`; datasets are loaded through `get_dataset` and wrapped with `CorruptedDataset`.
+- `scsi_synthetic.py` — low-dim MLP experiments on the 2-D synthetic `two_moons` distribution using `FeedForwardwithEMB` + `Trainer`; datasets are loaded through `get_dataset` and wrapped with `CorruptedDataset`.
 - `clean_interpolants.py` — produces "cleaned" samples from a trained interpolant (used as input to warm-start runs).
 - `fid_eval_*.py`, `lpips_eval_*.py`, `fid_eval_stage.py` — evaluation drivers; `_dps` variants benchmark diffusion posterior sampling baselines via `src/dps.py`.
 
@@ -51,7 +51,7 @@ New experiments typically start by copying one of these drivers and editing the 
 
 The pipeline has four pluggable pieces; a driver picks one of each and hands them to `Trainer`.
 
-**1. Dataset (`custom_datasets.py`).** Canonical API is `get_dataset(name, data_root, seed=42, **fetch_kwargs) -> (dataset, D, nc)`, backed by the `DATASETS` registry. Supported names: `mnist`, `cifar10`, `celebA`, `two_moons`, `checkerboard`, `qso`. Each entry has a `fetch(data_root, seed=...)` that downloads/generates into `data_root/<name>/` on first call (synthetic caches under `.../seed_<seed>/`), then loads from disk. `fetch_kwargs` are forwarded to the fetch function — used by `qsos.py` to pass `max_spectra` and `z_range`. QSO downloading lives in `src/qso_download.py` with a CLI wrapper at `scripts/download_qso.py`; `QSODataset` exposes both per-spectrum flux (as items) and the shared `loglam` grid (as an attribute). `CorruptedDataset` wraps a clean dataset and applies a forward map on-the-fly; `tied_rng` (controlled by `--multiview`) decides whether each epoch sees the same corruption realization per sample or a fresh one. `ImagesOnly` strips labels; `NumpyArrayDataset` / `CombinedNumpyDataset` wrap pre-saved arrays.
+**1. Dataset (`custom_datasets.py`).** Canonical API is `get_dataset(name, data_root, seed=42, **fetch_kwargs) -> (dataset, D, nc)`, backed by the `DATASETS` registry. Supported names: `mnist`, `cifar10`, `celebA`, `two_moons`, `qso`. Each entry has a `fetch(data_root, seed=...)` that downloads/generates into `data_root/<name>/` on first call (synthetic caches under `.../seed_<seed>/`), then loads from disk. `fetch_kwargs` are forwarded to the fetch function — used by `qsos.py` to pass `max_spectra` and `z_range`. QSO downloading lives in `src/qso_download.py` with a CLI wrapper at `scripts/download_qso.py`; `QSODataset` exposes both per-spectrum flux (as items) and the shared `loglam` grid (as an attribute). `CorruptedDataset` wraps a clean dataset and applies a forward map on-the-fly; `tied_rng` (controlled by `--multiview`) decides whether each epoch sees the same corruption realization per sample or a fresh one. `ImagesOnly` strips labels; `NumpyArrayDataset` / `CombinedNumpyDataset` wrap pre-saved arrays.
 
 **2. Forward map (`forward_maps.py`).** `corruption_dict` registers every corruption as a **factory** that takes its levels and returns a callable `fwd(x, return_latents=..., cond_y=..., embed=...)`. `parse_latents(corruption, D, C, cond_y)` returns `(use_latents, latent_dim)` so the model knows its conditioning shape. When adding a corruption, register it here *and* extend `parse_latents`.
 

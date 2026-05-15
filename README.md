@@ -2,7 +2,7 @@
 
 Official implementation of **Generative Modeling from Black-box Corruptions via Self-Consistent Stochastic Interpolants** (Chirag Modi, Jiequn Han, Eric Vanden-Eijnden, Joan Bruna — ICLR 2026). [[link]](https://arxiv.org/abs/2512.10857)
 
-Research code for training generative models (diffusion / stochastic interpolants) from **corrupted** observations — i.e. learning a clean-data prior when only degraded samples are available. Corruptions include Gaussian noise, random/block masking, Gaussian/motion blur, JPEG compression, and random projections. Targets CIFAR-10, MNIST, CelebA, SDSS DR16 quasar spectra (1-D), and 2-D synthetic distributions (`two_moons`, `checkerboard`).
+Research code for training generative models (diffusion / stochastic interpolants) from **corrupted** observations — i.e. learning a clean-data prior when only degraded samples are available. Corruptions include Gaussian noise, random/block masking, Gaussian/motion blur, JPEG compression, and random projections. Targets CIFAR-10, MNIST, CelebA, SDSS DR16 quasar spectra (1-D), and the 2-D synthetic `two_moons` distribution.
 
 ## Installation
 
@@ -87,7 +87,7 @@ All drivers pull data via `get_dataset(name, data_root, seed=42)` from `src/cust
 
 - `mnist`, `cifar10` — downloaded via `torchvision` on first call.
 - `celebA` — **not auto-downloaded**; place `img_align_celeba/` under `$SCSI_DATA/celebA/`.
-- `two_moons`, `checkerboard` — synthetic; cached under `$SCSI_DATA/<name>/seed_<seed>/`.
+- `two_moons` — synthetic; cached under `$SCSI_DATA/two_moons/seed_<seed>/`.
 - `qso` — SDSS DR16 quasar spectra; downloaded via `src/qso_download.py` on first call (small default: 1000 spectra in redshift range 2.75–3.25; configurable via `--max_spectra`, `--z_min`, `--z_max` on `qsos.py`). Requires `astropy`.
 
 To pre-download the QSO cache:
@@ -102,7 +102,7 @@ Top-level drivers add `<repo>/src` to `sys.path` via a `__file__`-relative `sys.
 
 | Script | Purpose |
 |---|---|
-| `scsi_synthetic.py` | 2-D synthetic MLP experiments (`two_moons`, `checkerboard`) |
+| `scsi_synthetic.py` | 2-D synthetic MLP experiments (`two_moons`) |
 | `scsi_image.py` | Single-GPU training from corrupted images |
 | `scsi_distributed.py` | DDP variant via `torchrun` |
 | `awgn.py` | Specialization for the additive-Gaussian-noise case |

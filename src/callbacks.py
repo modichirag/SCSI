@@ -47,7 +47,7 @@ def save_image(idx, b, interpolant, dataloader, device, results_folder, losses, 
 
 
 def save_fig_2dsynt_projection(idx, b, interpolant, dataloader, device, results_folder, losses, validation_data, s=None, corruption_name=None, **_kwargs):
-    # 4-panel scatter for 2D synthetic datasets (two_moons, checkerboard) under
+    # 4-panel scatter for 2D synthetic datasets (two_moons) under
     # projection_{coeff,vec}. All forward maps in this family return corrupted
     # samples of shape (N, dim_in=2), so panels Clean/Restored always scatter
     # directly. For Corrupted/Restored-corrupted: projection_vec and full-rank
