@@ -42,7 +42,7 @@ def save_image(idx, b, interpolant, dataloader, device, results_folder, losses, 
         axis.set_xticks([])
         axis.set_yticks([])
     plt.subplots_adjust(wspace=0.0, hspace=0.0)
-    plt.savefig(f'{results_folder}/denoising_{idx}.png', dpi=300)
+    plt.savefig(f'{results_folder}/restored_{idx}.png', dpi=300)
     plt.close()
 
 
@@ -100,7 +100,7 @@ def save_fig_2dsynt_projection(idx, b, interpolant, dataloader, device, results_
     axes[3].set_title("Restored corrupted samples", fontsize=18); style_corrupted(axes[3])
 
     plt.subplots_adjust(wspace=0.0, hspace=0.0)
-    plt.savefig(f'{results_folder}/denoising_{idx}.png', dpi=300)
+    plt.savefig(f'{results_folder}/restored_{idx}.png', dpi=300)
     plt.close()
 
 
