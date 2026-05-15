@@ -103,7 +103,8 @@ b =  ConditionalDhariwalUNet(D, nc, nc, latent_dim=latent_dim,
                             model_channels=model_channels, gated=gated, \
                             max_pos_embedding=args.max_pos_embedding).to(device)
 # b = DDP(b, device_ids=[local_rank], find_unused_parameters=False)     
-print("Parameter count : ", count_parameters(b))
+_n_total, _n_trainable = count_parameters(b)
+print(f"Parameter count: {_n_total:.3f}M total, {_n_trainable:.3f}M trainable")
 interpolant = SCSInterpolant(fwd_func, use_latents=use_latents, \
                                     alpha=args.alpha, resamples=args.resamples, \
                                     n_steps=args.ode_steps).to(device)
@@ -128,6 +129,7 @@ trainer = Trainer(model=b,
                 warmup_fraction=0.05,
                 update_transport_steps=args.transport_steps,
                 callback_fn =save_image,
+                callback_kwargs={"dataset_name": args.dataset},
         # mixed_precision_type = 'fp32',
         )
 

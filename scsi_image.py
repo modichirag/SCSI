@@ -137,7 +137,8 @@ if args.load_model_path:
         ema.load_state_dict(remove_all_prefix(data['s_ema']))
         s_model.load_state_dict(ema.ema_model.state_dict())
 
-print("Parameter count : ", count_parameters(b))
+_n_total, _n_trainable = count_parameters(b)
+print(f"Parameter count: {_n_total:.3f}M total, {_n_trainable:.3f}M trainable")
 #b = torch.compile(b)
 
 # Corruption: only pre-bind kwargs the user explicitly opts into, since not
@@ -179,6 +180,7 @@ trainer = Trainer(model=b,
                   clean_data_steps=args.cleansteps,
                   save_transport=args.save_transport,
                   callback_fn=save_image,
+                  callback_kwargs={"dataset_name": args.dataset},
         )
 
 trainer.train()

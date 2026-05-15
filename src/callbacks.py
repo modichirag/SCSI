@@ -4,6 +4,20 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 from utils import grab, push_to_device
+from custom_datasets import (
+    mnist_inverse_transforms,
+    cifar10_inverse_transforms,
+    celebA_inverse_transforms,
+)
+
+# Map dataset name → callable mapping normalized tensors back to [0, 1].
+# Used by save_image so per-step PNGs match the brightness of paper figures
+# instead of being silently clipped by matplotlib's RGB-float [0, 1] rule.
+_INVERSE_TRANSFORMS = {
+    "mnist": mnist_inverse_transforms,
+    "cifar10": cifar10_inverse_transforms,
+    "celebA": celebA_inverse_transforms,
+}
 
 ## Expected signature of callback_fn
 # callback_fn(milestone, b, interpolant,
@@ -24,13 +38,23 @@ def get_samples(b, interpolant, dataloader, device, validation_data, s=None):
 
 
 
-def save_image(idx, b, interpolant, dataloader, device, results_folder, losses, validation_data, s=None, **_kwargs):
+def save_image(idx, b, interpolant, dataloader, device, results_folder, losses, validation_data, s=None, dataset_name=None, **_kwargs):
 
     data, obs, latents, restored = get_samples(b, interpolant, dataloader, device, validation_data, s=s)
     to_show = [data, obs, restored]
 
+    # Map tensors back to [0, 1] before plotting. matplotlib's imshow silently
+    # clips RGB float arrays to [0, 1] (vmin/vmax are ignored for RGB), so
+    # plotting normalized tensors directly turns negative pixels into pure
+    # black and makes the panel look much darker than published figures.
+    inv = _INVERSE_TRANSFORMS.get(dataset_name)
+    if inv is not None:
+        to_show = [inv(t).clamp(0.0, 1.0) for t in to_show]
+        vmax, vmin = 1.0, 0.0
+    else:
+        vmax, vmin = data.max() * 1.1, data.min() * 0.5
+
     fig, axar = plt.subplots(len(to_show), 8, figsize=(8, 3), sharex=True, sharey=True)
-    vmax, vmin = data.max()*1.1, data.min()*0.5
     for i in range(len(to_show)):
         for j in range(8):
             ax = axar[i, j]

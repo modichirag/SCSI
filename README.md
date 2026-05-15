@@ -57,7 +57,6 @@ To try a different forward model, swap the `--corruption` / `--corruption_levels
 | `--corruption`         | `--corruption_levels` | Argument semantics                       |
 |---|---|---|
 | `random_mask`          | `0.5 0.0 1.0`         | `(mask_ratio, epsilon, noise_mask)`      |
-| `gaussian_noise`       | `0.5`                 | `(sigma,)`                               |
 | `gaussian_blur`        | `1.0 0.1`             | `(sigma_R, sigma_n)`                     |
 | `gaussian_blur_pnoise` | `1.0 0.1`             | `(sigma_R, lambda_n)` — Poisson rate     |
 | `random_motion`        | `5.0 0.1`             | `(kernel_size, sigma_n)`                 |

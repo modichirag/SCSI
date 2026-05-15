@@ -104,7 +104,8 @@ else:
 valid_data_plot = (clean_data_valid, corrupted_valid, latents_valid)
 
 b =  FeedForwardwithEMB(dim_in, args.t_emb_dim, [args.fc_width]*args.fc_depth, latent_dim=latent_dim).to(device)
-print("Parameter count : ", count_parameters(b))
+_n_total, _n_trainable = count_parameters(b)
+print(f"Parameter count: {_n_total:.3f}M total, {_n_trainable:.3f}M trainable")
 
 trainer = Trainer(model=b,
         interpolant=interpolant,

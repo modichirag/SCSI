@@ -136,7 +136,8 @@ if args.load_model_path:
 
 
 #b = torch.compile(b)
-print("Parameter count : ", count_parameters(b))
+_n_total, _n_trainable = count_parameters(b)
+print(f"Parameter count: {_n_total:.3f}M total, {_n_trainable:.3f}M trainable")
 interpolant = SCSInterpolantAWGN(fwd_func, use_latents=use_latents, \
                                       alpha=args.alpha, resamples=args.resamples, n_steps=args.ode_steps, \
                                       gamma_scale=args.gamma_scale, diffusion_coeff=args.diffusion_coeff,
