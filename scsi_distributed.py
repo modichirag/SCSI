@@ -15,7 +15,7 @@ from networks import ConditionalDhariwalUNet
 from interpolant_utils import SCSInterpolant
 import forward_maps as fwd_maps
 from trainer_si import Trainer, get_worker_info
-from callbacks import save_image
+from callbacks import save_image, save_image_and_metrics
 import argparse
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -43,6 +43,8 @@ parser.add_argument("--resamples", type=int, default=1, help="number of resampli
 parser.add_argument("--multiview", action='store_true', help="change corruption every epoch if provided, else not")
 parser.add_argument("--max_pos_embedding", type=int, default=2, help="number of resamplings")
 parser.add_argument("--transport_steps", type=int, default=1, help="update transport map every n steps")
+parser.add_argument("--no_metrics", action='store_true', help="disable in-training LPIPS/PSNR/SSIM probe (saves snapshot PNGs only)")
+parser.add_argument("--n_eval_samples", type=int, default=1024, help="samples per in-training metrics probe; ignored if --no_metrics")
 
 args = parser.parse_args()
 print(args)
@@ -128,8 +130,8 @@ trainer = Trainer(model=b,
                 results_folder=results_folder, 
                 warmup_fraction=0.05,
                 update_transport_steps=args.transport_steps,
-                callback_fn =save_image,
-                callback_kwargs={"dataset_name": args.dataset},
+                callback_fn =save_image if args.no_metrics else save_image_and_metrics,
+                callback_kwargs={"dataset_name": args.dataset, "n_eval_samples": args.n_eval_samples},
         # mixed_precision_type = 'fp32',
         )
 

@@ -1,8 +1,11 @@
+import json
 import os
-import numpy as np
+import time
 from contextlib import nullcontext
 from pathlib import Path
 from multiprocessing import cpu_count
+
+import numpy as np
 
 import torch
 import torch.distributed as dist
@@ -167,12 +170,56 @@ class Trainer:
 
         self.results_folder = Path(results_folder)
         self.results_folder.mkdir(exist_ok = True)
+        if self.master_process:
+            self._write_slurm_info()
+        # Wall-clock of the previous checkpoint callback. Used to compute
+        # the per-save_and_sample_every interval in step_timings.jsonl.
+        # None until the first save fires.
+        self._last_callback_time = None
 
         # step counter state
         self.step = 0
         if milestone is not None:
             print("Milestone is not None. Will be loading model")
             self.load(milestone)
+
+
+    def _write_slurm_info(self):
+        """If running under SLURM, persist job id + log paths into the run
+        folder so the slurm logs are discoverable from the results side. No-op
+        outside SLURM (interactive runs)."""
+        jobid = os.environ.get("SLURM_JOB_ID")
+        if not jobid:
+            return
+        import json as _json
+        jobname = os.environ.get("SLURM_JOB_NAME", "")
+        submit_dir = os.environ.get("SLURM_SUBMIT_DIR", os.getcwd())
+        # Resolve the actual log paths from `scontrol show job` if available;
+        # fall back to the conventional logs/raw/<script>.<jobid>.{out,err}
+        # layout used by the job-* scripts in this repo.
+        out_path = err_path = ""
+        try:
+            import subprocess
+            cp = subprocess.run(
+                ["scontrol", "show", "job", jobid],
+                capture_output=True, text=True, timeout=10,
+            )
+            for line in cp.stdout.split():
+                if line.startswith("StdOut="):
+                    out_path = line[len("StdOut="):]
+                elif line.startswith("StdErr="):
+                    err_path = line[len("StdErr="):]
+        except Exception:
+            pass
+        info = {
+            "slurm_job_id": jobid,
+            "slurm_job_name": jobname,
+            "slurm_submit_dir": submit_dir,
+            "stdout_log": out_path,
+            "stderr_log": err_path,
+        }
+        with open(self.results_folder / "slurm_info.json", "w") as f:
+            _json.dump(info, f, indent=2)
 
 
     def save(self, milestone):
@@ -399,6 +446,7 @@ class Trainer:
                                                 else self.s_ema.ema_model
                             else:
                                 s_model_to_use = None
+                            cb_start = time.perf_counter()
                             try:
                                 if self.s_model is not None:
                                     self.s_model.eval()
@@ -411,6 +459,17 @@ class Trainer:
                                                         results_folder = self.results_folder, **self.callback_kwargs)
                             except Exception as e:
                                 print("Exception in executing callback function\n", e)
+                            cb_end = time.perf_counter()
+                            interval = (cb_start - self._last_callback_time
+                                        if self._last_callback_time is not None else None)
+                            record = {
+                                "step": self.step,
+                                "callback_total_sec": round(cb_end - cb_start, 4),
+                                "interval_since_prev_sec": round(interval, 3) if interval is not None else None,
+                            }
+                            with open(self.results_folder / "step_timings.jsonl", "a") as f:
+                                f.write(json.dumps(record) + "\n")
+                            self._last_callback_time = cb_end
                             print(f"Saved model at step {self.step}")
 
                 pbar.update(1)

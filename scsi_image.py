@@ -12,7 +12,7 @@ from networks import ConditionalDhariwalUNet
 from interpolant_utils import SCSInterpolant,  SCSInterpolantCombined
 import forward_maps as fwd_maps
 from trainer_si import Trainer
-from callbacks import save_image
+from callbacks import save_image, save_image_and_metrics
 from utils import remove_all_prefix
 from functools import partial
 import argparse
@@ -54,6 +54,8 @@ parser.add_argument("--randomize_t", action='store_true', help="randomize time s
 parser.add_argument("--save_transport", action='store_true', help="save transport maps on updating")
 parser.add_argument("--n_transports", type=int, default=1, help="update transport map every n steps")
 parser.add_argument("--cond_y", action='store_true', help="save transport maps on updating")
+parser.add_argument("--no_metrics", action='store_true', help="disable in-training LPIPS/PSNR/SSIM probe (saves snapshot PNGs only)")
+parser.add_argument("--n_eval_samples", type=int, default=1024, help="samples per in-training metrics probe; ignored if --no_metrics")
 parser.add_argument("--embed", action='store_true', help="save transport maps on updating")
 
 args = parser.parse_args()
@@ -179,8 +181,8 @@ trainer = Trainer(model=b,
                   s_model=s_model,
                   clean_data_steps=args.cleansteps,
                   save_transport=args.save_transport,
-                  callback_fn=save_image,
-                  callback_kwargs={"dataset_name": args.dataset},
+                  callback_fn=save_image if args.no_metrics else save_image_and_metrics,
+                  callback_kwargs={"dataset_name": args.dataset, "n_eval_samples": args.n_eval_samples},
         )
 
 trainer.train()
