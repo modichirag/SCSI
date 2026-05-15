@@ -10,7 +10,7 @@ import json
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src'))
 from utils import count_parameters, make_serializable
 from custom_datasets import get_dataset, ImagesOnly, CorruptedDataset
-from paths import default_data_root, default_results_root, view_root, build_run_slug
+from paths import default_data_root, default_results_root, build_run_slug, build_run_dir
 from networks import ConditionalDhariwalUNet
 from interpolant_utils import SCSInterpolant
 import forward_maps as fwd_maps
@@ -46,9 +46,6 @@ parser.add_argument("--transport_steps", type=int, default=1, help="update trans
 
 args = parser.parse_args()
 print(args)
-
-BASEPATH = view_root(args)
-
 
 # Initialize DDP
 ddp = int(os.environ.get('RANK', -1)) != -1 # is this a ddp run?
@@ -93,7 +90,7 @@ if use_latents:
 # Folder name
 folder = build_run_slug(args)
 print(f"Corruption name for levels {corruption_levels}: ", folder)
-results_folder = f"{BASEPATH}/{folder}/"
+results_folder = build_run_dir(args, slug=folder)
 os.makedirs(results_folder, exist_ok=True)
 print(f"Results will be saved in folder: {results_folder}")
 args_dict = make_serializable(vars(args) if isinstance(args, argparse.Namespace) else args)

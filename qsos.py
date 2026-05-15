@@ -13,7 +13,7 @@ from utils import count_parameters, make_serializable
 from karras_unet_1d import KarrasUnet1D, PixelUnShuffle1D
 from custom_datasets import  NumpyArrayDataset, CorruptedDataset, get_dataset
 from interpolant_utils import SCSInterpolant, SCSInterpolantCombined
-from paths import default_data_root, default_results_root, view_root, build_run_slug
+from paths import default_data_root, default_results_root, build_run_slug, build_run_dir
 from trainer_si import Trainer, get_worker_info
 from quasars import qso_model,  qso_dataloader, qso_callback
 import argparse
@@ -53,9 +53,6 @@ parser.add_argument("--z_max", type=float, default=3.25, help="QSO redshift uppe
 
 args = parser.parse_args()
 print(args)
-
-BASEPATH = view_root(args)
-print(BASEPATH)
 
 # Initialize DDP
 ddp = int(os.environ.get('RANK', -1)) != -1 # is this a ddp run?
@@ -115,7 +112,7 @@ folder = build_run_slug(
     base=f"qso_res-{idloglamb}_snr-{min_snr}-{max_snr}",
     tokens=("cds", "tr", "sde", "g_2f", "dc", "sampler", "randt", "combined"),
 )
-results_folder = f"{BASEPATH}/{folder}/"
+results_folder = build_run_dir(args, slug=folder, dataset_key="qso", corruption_key=None)
 os.makedirs(results_folder, exist_ok=True)
 args_dict = make_serializable(vars(args) if isinstance(args, argparse.Namespace) else args)
 print(f"Results will be saved in folder: {results_folder}")

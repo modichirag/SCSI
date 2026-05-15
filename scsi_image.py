@@ -7,7 +7,7 @@ import json
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src'))
 from utils import count_parameters, make_serializable
 from custom_datasets import get_dataset, ImagesOnly, CorruptedDataset
-from paths import default_data_root, default_results_root, view_root, build_run_slug
+from paths import default_data_root, default_results_root, build_run_slug, build_run_dir
 from networks import ConditionalDhariwalUNet
 from interpolant_utils import SCSInterpolant,  SCSInterpolantCombined
 import forward_maps as fwd_maps
@@ -59,8 +59,6 @@ parser.add_argument("--embed", action='store_true', help="save transport maps on
 args = parser.parse_args()
 print(args)
 
-BASEPATH = view_root(args)
-
 # Parse arguments
 dataset, D, nc = get_dataset(args.dataset, args.data_root, seed=args.dataset_seed)
 if args.dataset == 'celebA':
@@ -91,7 +89,7 @@ folder = build_run_slug(
             "sampler", "randt", "combined", "condy", "embed"),
 )
 print(f"Corruption name for levels {corruption_levels}: ", folder)
-results_folder = f"{BASEPATH}/{folder}/"
+results_folder = build_run_dir(args, slug=folder)
 os.makedirs(results_folder, exist_ok=True)
 print(f"Results will be saved in folder: {results_folder}")
 
@@ -127,7 +125,7 @@ if args.load_model_path:
     print("Loading model from: ", args.load_model_path)
     from ema_pytorch import EMA
     try:
-        data = torch.load(f'{BASEPATH}/{args.load_model_path}', weights_only=True, map_location='cpu')
+        data = torch.load(f'{args.results_root}/{args.load_model_path}', weights_only=True, map_location='cpu')
     except:
         data = torch.load(f'{args.load_model_path}', weights_only=True, map_location='cpu')
     ema = EMA(b)

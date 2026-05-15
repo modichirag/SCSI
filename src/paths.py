@@ -7,14 +7,28 @@ Environment variables:
 Drivers expose these as `--data_root` / `--results_root` argparse flags,
 using `default_data_root()` / `default_results_root()` as the default value.
 
-Run-folder naming
+Run-folder layout
 -----------------
-Historically each driver built its run-folder slug inline as
-``{dataset}-{corruption}-{cname}[-tok1][-tok2]...[-suffix]`` under either
-``{results_root}/singleview/`` or ``{results_root}/multiview/``. This module
-exposes the shared helpers `view_root`, `cname_from_levels`, `build_run_slug`,
-and `build_run_dir` so all drivers and eval scripts produce identical paths
-from the same args.
+Each run is identified by a path of the form::
+
+    {results_root}/{dataset}/{corruption}/{slug}/
+
+with ``slug = {cname}[-tok1][-tok2]...[-suffix][-mv][/subfolder/][-awgn]`` where:
+
+  * cname     = hyphen-joined corruption levels (``0.50-0.00-1.00``)
+  * tok*      = architectural variant tokens (cds, tr, sde, g, dc, sampler,
+                randt, combined, condy, embed) — emitted only when the
+                corresponding ``args.*`` flag deviates from its default
+  * suffix    = ``args.suffix`` (user label)
+  * mv        = appended when ``args.multiview`` is True; the
+                ``singleview/``/``multiview/`` directory level used in the
+                pre-2026 layout no longer exists
+  * subfolder = nested directory level for related runs
+  * awgn      = trailing token in the AWGN-specialization drivers
+
+Datasets without a meaningful per-run corruption (e.g. ``qsos.py``) skip the
+``{corruption}/`` segment by passing ``corruption_key=None`` to
+``build_run_dir``.
 """
 import os
 
@@ -25,17 +39,6 @@ def default_data_root() -> str:
 
 def default_results_root() -> str:
     return os.environ.get("SCSI_RESULTS", "./results")
-
-
-def view_root(args) -> str:
-    """Path under results_root corresponding to args.multiview.
-
-    Returns ``{results_root}/multiview`` or ``{results_root}/singleview``.
-    Use this when composing paths that share the singleview/multiview split
-    (training checkpoint dirs, ``--load_model_path`` resolution, etc.).
-    """
-    view = "multiview" if getattr(args, "multiview", False) else "singleview"
-    return os.path.join(args.results_root, view)
 
 
 def cname_from_levels(corruption_levels) -> str:
@@ -77,34 +80,37 @@ def build_run_slug(args, *, base=None, tokens=(), awgn=False, subfolder=False) -
 
     Slug shape::
 
-        [prefix-]{base}[-tok1][-tok2]...[-suffix][/subfolder/][-awgn]
+        [prefix-]{base}[-tok1][-tok2]...[-suffix][-mv][/subfolder/][-awgn]
+
+    The ``-mv`` token is placed *after* suffix (not as a regular schema token)
+    so that pre-2026 ``multiview/<old-slug>/`` paths migrate by simply
+    appending ``-mv`` to the slug — no parsing of suffix vs. token segments
+    required.
 
     Parameters
     ----------
     args : argparse.Namespace
         Must expose attributes referenced by the chosen tokens; missing
         attributes are treated as default (token skipped). ``args.prefix`` /
-        ``args.suffix`` / ``args.subfolder`` are looked up via ``getattr`` and
-        skipped when absent or empty.
+        ``args.suffix`` / ``args.subfolder`` / ``args.multiview`` are looked
+        up via ``getattr``.
     base : str, optional
-        Slug root. Defaults to
-        ``f"{args.dataset}-{args.corruption}-{cname_from_levels(args.corruption_levels)}"``.
-        Pass explicitly for non-standard roots (e.g. qsos.py).
+        Slug root. Defaults to ``cname_from_levels(args.corruption_levels)``
+        (just the levels — dataset and corruption are now path segments via
+        ``build_run_dir``). Pass explicitly for non-standard roots (e.g.
+        ``qsos.py``).
     tokens : iterable of str
-        Names from ``_TOKEN_SCHEMA`` to attempt, in order. Each is appended as
-        ``-<formatted>`` when its predicate is true. Different drivers historically
-        emitted different subsets in different orders; pass exactly the set the
-        driver used.
+        Names from ``_TOKEN_SCHEMA`` to attempt, in order. Each is appended
+        as ``-<formatted>`` when its predicate is true. Different drivers
+        emit different subsets; pass exactly the set the driver supports.
     awgn : bool
-        Append a trailing ``-awgn`` after suffix/subfolder (awgn.py /
-        fid_eval_awgn.py convention).
+        Append a trailing ``-awgn`` (awgn.py / fid_eval_awgn.py convention).
     subfolder : bool
         Honor ``args.subfolder`` by nesting under it inside the run dir
-        (used by clean_interpolants.py, fid_eval_*.py, lpips_eval_*.py).
+        (used by ``clean_interpolants.py`` and the eval drivers).
     """
     if base is None:
-        cname = cname_from_levels(args.corruption_levels)
-        base = f"{args.dataset}-{args.corruption}-{cname}"
+        base = cname_from_levels(args.corruption_levels)
     slug = base
     for tok in tokens:
         pred, fmt = _TOKEN_SCHEMA[tok]
@@ -116,6 +122,8 @@ def build_run_slug(args, *, base=None, tokens=(), awgn=False, subfolder=False) -
     suffix = getattr(args, "suffix", "")
     if suffix:
         slug = f"{slug}-{suffix}"
+    if getattr(args, "multiview", False):
+        slug = f"{slug}-mv"
     if subfolder:
         sub = getattr(args, "subfolder", "")
         if sub:
@@ -125,12 +133,30 @@ def build_run_slug(args, *, base=None, tokens=(), awgn=False, subfolder=False) -
     return slug
 
 
-def build_run_dir(args, *, slug, view=True) -> str:
-    """Compose the full run folder path.
+def build_run_dir(args, *, slug, dataset_key=None, corruption_key="__from_args__") -> str:
+    """Compose the full run folder path::
 
-    With ``view=True`` (default), prepends ``multiview/`` or ``singleview/``
-    based on ``args.multiview``. With ``view=False``, skips that level
-    (used by ``scsi_synthetic.py``). Always returns a trailing ``/``.
+        {results_root}/{dataset}/{corruption}/{slug}/
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Must expose ``results_root``. ``dataset`` and ``corruption`` are
+        looked up unless overridden.
+    slug : str
+        The slug portion (typically from ``build_run_slug``).
+    dataset_key : str, optional
+        Overrides ``args.dataset`` (e.g. pass ``"qso"`` when ``args.dataset``
+        is absent).
+    corruption_key : str or None
+        Defaults to ``args.corruption``. Pass ``None`` to drop the
+        ``{corruption}/`` segment entirely (for datasets without a
+        per-run corruption name, e.g. ``qsos.py``).
     """
-    root = view_root(args) if view else args.results_root
-    return f"{root}/{slug}/"
+    parts = [args.results_root, dataset_key or args.dataset]
+    if corruption_key == "__from_args__":
+        corruption_key = getattr(args, "corruption", None)
+    if corruption_key is not None:
+        parts.append(corruption_key)
+    parts.append(slug)
+    return "/".join(parts) + "/"

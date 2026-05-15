@@ -11,7 +11,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src'))
 from networks import ConditionalDhariwalUNet
 from custom_datasets import get_dataset, ImagesOnly, cifar10_inverse_transforms
 from interpolant_utils import SCSInterpolant, SCSInterpolantCombined
-from paths import default_data_root, default_results_root, view_root, build_run_slug
+from paths import default_data_root, default_results_root, build_run_slug, build_run_dir
 import forward_maps as fwd_maps
 from fid_evaluation import FIDEvaluation, calculate_frechet_distance
 from utils import infinite_dataloader,  num_to_groups, remove_orig_mod_prefix
@@ -53,8 +53,6 @@ parser.add_argument("--embed", action='store_true', help="save transport maps on
 
 args = parser.parse_args()
 print(args)
-BASEPATH = view_root(args)
-
 # Parse arguments
 dataset, D, nc = get_dataset(args.dataset, args.data_root)
 dl = infinite_dataloader(DataLoader(ImagesOnly(dataset), 
@@ -63,8 +61,6 @@ dl = infinite_dataloader(DataLoader(ImagesOnly(dataset),
 gated = args.gated
 if gated: 
     args.suffix = f"{args.suffix}-gated" if args.suffix else "gated"
-print(BASEPATH)
-
 # Parse corruption arguments
 corruption = args.corruption
 corruption_levels = args.corruption_levels
@@ -79,7 +75,7 @@ slug = build_run_slug(
             "sampler", "randt", "combined", "condy", "embed"),
     subfolder=True,
 )
-folder = f"{BASEPATH}/{slug}/"
+folder = build_run_dir(args, slug=slug)
 results_folder = f"{folder}/results"
 os.makedirs(results_folder, exist_ok=True)
 print(f"Models will be loaded from folder: {folder}")

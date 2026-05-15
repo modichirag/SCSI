@@ -12,7 +12,7 @@ from custom_datasets import get_dataset, CorruptedDataset
 from interpolant_utils import SCSInterpolant
 from callbacks import save_fig_2dsynt_projection
 from trainer_si import Trainer
-from paths import default_data_root, default_results_root, build_run_slug
+from paths import default_data_root, default_results_root, build_run_slug, build_run_dir
 import forward_maps as fwd_maps
 import argparse
 
@@ -68,7 +68,7 @@ except Exception as e:
     print("Exception in loading corruption function : ", e)
     sys.exit()
 folder = build_run_slug(args)
-results_folder = f"{args.results_root}/{folder}/"
+results_folder = build_run_dir(args, slug=folder)
 os.makedirs(results_folder, exist_ok=True)
 print(f"Results will be saved in folder: {results_folder}")
 use_latents, latent_dim = fwd_maps.parse_latents(corruption, None)

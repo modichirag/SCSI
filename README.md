@@ -29,7 +29,7 @@ python scsi_synthetic.py \
 
 Other settings use driver defaults, including `batch_size=2000`, `fc_width=256`, `fc_depth=3`, `resamples=1`, `alpha=0.9`, `ode_steps=40`, and `t_emb_dim=32`.
 
-Outputs (loss curve, intermediate denoising snapshots, final model) land under `./results/two_moons-gaussian_noise-0.50-test/`. `tests/test_synthetic.py` runs a much smaller configuration as a wiring check.
+Outputs (loss curve, intermediate restored snapshots, final model) land under `./results/two_moons/gaussian_noise/0.50-test/`. `tests/test_synthetic.py` runs a much smaller configuration as a wiring check.
 
 ## Quickstart: MNIST under various corruptions
 
@@ -64,7 +64,7 @@ To try a different forward model, swap the `--corruption` / `--corruption_levels
 
 `jpeg_compress` is RGB-only (uses YCbCr decomposition) and is skipped for MNIST; on CIFAR-10 it takes levels `(10, 100, 0.01)` = `(min_quality, max_quality, sigma_n)`.
 
-Outputs land under `./results/singleview/mnist-<corruption>-<levels>-test/`. `tests/test_image.py` runs a much smaller configuration as a wiring check.
+Outputs land under `./results/mnist/<corruption>/<levels>-test/`. `tests/test_image.py` runs a much smaller configuration as a wiring check.
 
 ## A real example: CIFAR-10 with random masking
 
@@ -76,7 +76,7 @@ python -u scsi_image.py \
     --alpha 0.9 --resamples 2 --learning_rate 5e-4 --lr_scheduler
 ```
 
-CIFAR-10 downloads to `$SCSI_DATA` (default `./data/cifar10/`) on first call. Outputs go to `$SCSI_RESULTS/singleview/...` (or `multiview/...` with `--multiview`).
+CIFAR-10 downloads to `$SCSI_DATA` (default `./data/cifar10/`) on first call. Outputs go to `$SCSI_RESULTS/<dataset>/<corruption>/<run-slug>/` (with a `-mv` token appended to the slug when `--multiview` is passed).
 
 Distributed (single-node, multi-GPU) training uses `torchrun`:
 

@@ -30,7 +30,7 @@ Paths are controlled by two env vars / CLI flags, resolved in `src/paths.py`:
 - `SCSI_DATA` / `--data_root` — dataset cache root (default `./data`).
 - `SCSI_RESULTS` / `--results_root` — training output root (default `./results`).
 
-Multiview-aware drivers append `singleview/` or `multiview/` under `results_root` based on `--multiview`; plain drivers (`train.py`, `sample.py`, `fid_eval.py`, `fid_eval_stage.py`) write directly under `results_root`. Each run saves `args.json`, `model-best.pt`, and loss/FID artifacts into a folder whose name is auto-built from `{dataset}-{corruption}-{levels}-{options}-{suffix}` (see `scsi_image.py` for the naming convention). The DPS eval drivers (`fid_eval_dps.py`, `lpips_eval_dps.py`) also load their baseline EDM checkpoint from `{results_root}/{modelfolder}/model-{model}.pt`.
+Run folders live at `{results_root}/{dataset}/{corruption}/{slug}/` (qsos.py uses `{results_root}/qso/{slug}/` — no per-run corruption segment). The slug is `{cname}[-tokens][-suffix][-mv][/subfolder/][-awgn]`, built by `build_run_slug` and assembled into the full path by `build_run_dir` in `src/paths.py`. The `-mv` token replaces the pre-2026 `multiview/` directory level; setting `--multiview` appends `-mv` to the slug. Each run saves `args.json`, `model-best.pt`, and loss/FID artifacts directly into that folder. Plain-EDM drivers (`train.py`, `sample.py`, `fid_eval.py`, `fid_eval_stage.py`) take an explicit `--folder` argument and write to `{results_root}/{folder}/`. The DPS eval drivers (`fid_eval_dps.py`, `lpips_eval_dps.py`) load their baseline EDM checkpoint from `{results_root}/{modelfolder}/model-{model}.pt`.
 
 ## Driver script → purpose map
 

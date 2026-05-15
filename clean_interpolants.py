@@ -10,7 +10,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src'))
 from networks import ConditionalDhariwalUNet
 from custom_datasets import get_dataset, ImagesOnly, cifar10_inverse_transforms
 from interpolant_utils import SCSInterpolant, SCSInterpolantCombined
-from paths import default_data_root, default_results_root, view_root, build_run_slug
+from paths import default_data_root, default_results_root, build_run_slug, build_run_dir
 import forward_maps as fwd_maps
 from utils import remove_orig_mod_prefix, remove_all_prefix
 from tqdm.auto import tqdm
@@ -48,8 +48,6 @@ parser.add_argument("--randomize_t", action='store_true', help="randomize time s
 
 args = parser.parse_args()
 print(args)
-BASEPATH = view_root(args)
-
 # Parse arguments
 dataset, D, nc = get_dataset(args.dataset, args.data_root)
 dl = DataLoader(ImagesOnly(dataset), batch_size = args.batch_size, \
@@ -71,7 +69,7 @@ slug = build_run_slug(
     tokens=("cds", "tr", "sde", "g_2f", "dc", "sampler", "randt", "combined"),
     subfolder=True,
 )
-folder = f"{BASEPATH}/{slug}/"
+folder = build_run_dir(args, slug=slug)
 results_folder = f"{folder}/restored_{args.model}/"
 os.makedirs(results_folder, exist_ok=True)
 print(f"Models will be loaded from folder: {folder}")

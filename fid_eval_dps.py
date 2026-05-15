@@ -10,7 +10,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src'))
 from networks import EDMPrecond
 from custom_datasets import get_dataset, ImagesOnly, cifar10_inverse_transforms
 from interpolant_utils import SCSInterpolant
-from paths import default_data_root, default_results_root, view_root, build_run_slug
+from paths import default_data_root, default_results_root, build_run_slug, build_run_dir
 import forward_maps as fwd_maps
 from fid_evaluation import FIDEvaluation, calculate_frechet_distance
 from utils import infinite_dataloader,  num_to_groups, remove_orig_mod_prefix
@@ -43,8 +43,6 @@ parser.add_argument("--Schurn", type=int, default=30, help="Schurn")
 parser.add_argument("--conditioning_scale", type=float, default=1.0, help="conditioning scale")
 args = parser.parse_args()
 print(args)
-BASEPATH = view_root(args)
-
 # Parse arguments
 dataset, D, nc = get_dataset(args.dataset, args.data_root)
 model_channels = args.channels #192
@@ -55,8 +53,6 @@ dl = infinite_dataloader(DataLoader(ImagesOnly(dataset),
 gated = args.gated
 if gated: 
     args.suffix = f"{args.suffix}-gated" if args.suffix else "gated"
-print(BASEPATH)
-
 # Parse corruption arguments
 corruption = args.corruption
 corruption_levels = args.corruption_levels
@@ -70,7 +66,7 @@ except Exception as e:
     sys.exit()
 
 slug = build_run_slug(args, subfolder=True)
-folder = f"{BASEPATH}/{slug}/"
+folder = build_run_dir(args, slug=slug)
 results_folder = f"{folder}/results-dps/"
 os.makedirs(results_folder, exist_ok=True)
 print(f"Models will be loaded from folder: {folder}")
