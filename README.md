@@ -50,7 +50,7 @@ python -u scsi_image.py \
     --suffix test
 ```
 
-For `random_mask`, the three positional levels are `(mask_ratio, epsilon, noise_mask)`: 50% of pixels are masked, kept pixels carry no extra observation noise (`epsilon=0.0`), and masked pixels are replaced by standard Gaussian noise (`noise_mask=1.0`). This matches the paper convention.
+For `random_mask`, the three positional levels are `(mask_ratio, epsilon, noise_mask)`: 50% of pixels are masked, kept pixels carry no extra observation noise (`epsilon=0.0`), and masked pixels are replaced by standard Gaussian noise (`noise_mask=1.0`). This matches the noiseless paper row (Table 1, σ_n=10⁻⁶); the noisier row uses `0.5 0.1 1.0`.
 
 To try a different forward model, swap the `--corruption` / `--corruption_levels` pair — all other flags can stay the same:
 
