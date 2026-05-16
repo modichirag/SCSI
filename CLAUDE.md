@@ -30,7 +30,7 @@ Paths are controlled by two env vars / CLI flags, resolved in `src/paths.py`:
 - `SCSI_DATA` / `--data_root` — dataset cache root (default `./data`).
 - `SCSI_RESULTS` / `--results_root` — training output root (default `./results`).
 
-Run folders live at `{results_root}/{dataset}/{corruption}/{slug}/` (qsos.py uses `{results_root}/qso/{slug}/` — no per-run corruption segment). The slug is `{cname}[-tokens][-suffix][-mv][/subfolder/][-awgn]`, built by `build_run_slug` and assembled into the full path by `build_run_dir` in `src/paths.py`. The `-mv` token replaces the pre-2026 `multiview/` directory level; setting `--multiview` appends `-mv` to the slug. Each run saves `args.json`, `model-best.pt`, and loss/FID artifacts directly into that folder. Plain-EDM drivers (`train.py`, `sample.py`, `fid_eval.py`, `fid_eval_stage.py`) take an explicit `--folder` argument and write to `{results_root}/{folder}/`. The DPS eval drivers (`fid_eval_dps.py`, `lpips_eval_dps.py`) load their baseline EDM checkpoint from `{results_root}/{modelfolder}/model-{model}.pt`.
+Run folders live at `{results_root}/{dataset}/{corruption}/{slug}/` (qsos.py uses `{results_root}/qso/{slug}/` — no per-run corruption segment). The slug is `{cname}[-tokens][-suffix][-mv][/subfolder/][-awgn]`, built by `build_run_slug` and assembled into the full path by `build_run_dir` in `src/paths.py`. The `-mv` token replaces the pre-2026 `multiview/` directory level; setting `--multiview` appends `-mv` to the slug. Each run saves `args.json`, `model-best.pt`, and loss/FID artifacts directly into that folder. Plain-EDM drivers (`train.py`, `sample.py`, `fid_eval.py`) take an explicit `--folder` argument and write to `{results_root}/{folder}/`. The DPS eval drivers (`fid_eval_dps.py`, `lpips_eval_dps.py`) load their baseline EDM checkpoint from `{results_root}/{modelfolder}/model-{model}.pt`.
 
 ## Driver script → purpose map
 
@@ -39,11 +39,10 @@ Top-level scripts are **thin argparse + config wrappers**, not libraries. The re
 - `train.py`, `sample.py`, `fid_eval.py` — plain EDM diffusion baseline (clean data only), using `EDMPrecond` + `VELoss` + `edm_sampler`.
 - `scsi_image.py` — main single-GPU entry for learning from corrupted images via stochastic interpolants.
 - `scsi_distributed.py` — same, but DDP via `torchrun`.
-- `awgn.py` — specialization using `SCSInterpolantAWGN` for the additive-Gaussian-noise case.
 - `qsos.py` — 1-D quasar-spectra application; uses `KarrasUnet1D`.
 - `scsi_synthetic.py` — low-dim MLP experiments on the 2-D synthetic `two_moons` distribution using `FeedForwardwithEMB` + `Trainer`; datasets are loaded through `get_dataset` and wrapped with `CorruptedDataset`.
 - `clean_interpolants.py` — produces "cleaned" samples from a trained interpolant (used as input to warm-start runs).
-- `fid_eval_*.py`, `lpips_eval_*.py`, `fid_eval_stage.py` — evaluation drivers; `_dps` variants benchmark diffusion posterior sampling baselines via `src/dps.py`.
+- `fid_eval_*.py`, `lpips_eval_*.py` — evaluation drivers; `_dps` variants benchmark diffusion posterior sampling baselines via `src/dps.py`.
 
 New experiments typically start by copying one of these drivers and editing the corruption / dataset / model args.
 

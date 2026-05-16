@@ -108,9 +108,8 @@ Top-level drivers add `<repo>/src` to `sys.path` via a `__file__`-relative `sys.
 | `scsi_synthetic.py` | 2-D synthetic MLP experiments (`two_moons`) |
 | `scsi_image.py` | Single-GPU training from corrupted images |
 | `scsi_distributed.py` | DDP variant via `torchrun` |
-| `awgn.py` | Specialization for the additive-Gaussian-noise case |
 | `train.py`, `sample.py`, `fid_eval.py` | Plain EDM diffusion baseline (clean data only) |
-| `fid_eval_interpolants.py`, `fid_eval_awgn.py`, `fid_eval_dps.py` | FID evaluation of trained interpolants / DPS baseline |
+| `fid_eval_interpolants.py`, `fid_eval_dps.py` | FID evaluation of trained interpolants / DPS baseline |
 | `lpips_eval_interpolants.py`, `lpips_eval_dps.py` | LPIPS / PSNR / SSIM evaluation |
 | `clean_interpolants.py` | Produces "cleaned" samples from a trained interpolant |
 

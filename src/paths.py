@@ -13,7 +13,7 @@ Each run is identified by a path of the form::
 
     {results_root}/{dataset}/{corruption}/{slug}/
 
-with ``slug = {cname}[-tok1][-tok2]...[-suffix][-mv][/subfolder/][-awgn]`` where:
+with ``slug = {cname}[-tok1][-tok2]...[-suffix][-mv][/subfolder/]`` where:
 
   * cname     = hyphen-joined corruption levels (``0.50-0.00-1.00``)
   * tok*      = architectural variant tokens (cds, tr, sde, g, dc, sampler,
@@ -24,7 +24,6 @@ with ``slug = {cname}[-tok1][-tok2]...[-suffix][-mv][/subfolder/][-awgn]`` where
                 ``singleview/``/``multiview/`` directory level used in the
                 pre-2026 layout no longer exists
   * subfolder = nested directory level for related runs
-  * awgn      = trailing token in the AWGN-specialization drivers
 
 Datasets without a meaningful per-run corruption (e.g. ``qsos.py``) skip the
 ``{corruption}/`` segment by passing ``corruption_key=None`` to
@@ -75,12 +74,12 @@ _TOKEN_SCHEMA = {
 }
 
 
-def build_run_slug(args, *, base=None, tokens=(), awgn=False, subfolder=False) -> str:
+def build_run_slug(args, *, base=None, tokens=(), subfolder=False) -> str:
     """Build the run-folder slug from an argparse namespace.
 
     Slug shape::
 
-        [prefix-]{base}[-tok1][-tok2]...[-suffix][-mv][/subfolder/][-awgn]
+        [prefix-]{base}[-tok1][-tok2]...[-suffix][-mv][/subfolder/]
 
     The ``-mv`` token is placed *after* suffix (not as a regular schema token)
     so that pre-2026 ``multiview/<old-slug>/`` paths migrate by simply
@@ -103,8 +102,6 @@ def build_run_slug(args, *, base=None, tokens=(), awgn=False, subfolder=False) -
         Names from ``_TOKEN_SCHEMA`` to attempt, in order. Each is appended
         as ``-<formatted>`` when its predicate is true. Different drivers
         emit different subsets; pass exactly the set the driver supports.
-    awgn : bool
-        Append a trailing ``-awgn`` (awgn.py / fid_eval_awgn.py convention).
     subfolder : bool
         Honor ``args.subfolder`` by nesting under it inside the run dir
         (used by ``clean_interpolants.py`` and the eval drivers).
@@ -128,8 +125,6 @@ def build_run_slug(args, *, base=None, tokens=(), awgn=False, subfolder=False) -
         sub = getattr(args, "subfolder", "")
         if sub:
             slug = f"{slug}/{sub}/"
-    if awgn:
-        slug = f"{slug}-awgn"
     return slug
 
 
