@@ -43,6 +43,7 @@ parser.add_argument("--resamples", type=int, default=1, help="number of resampli
 parser.add_argument("--multiview", action='store_true', help="change corruption every epoch if provided, else not")
 parser.add_argument("--max_pos_embedding", type=int, default=2, help="number of resamplings")
 parser.add_argument("--transport_steps", type=int, default=1, help="update transport map every n steps")
+parser.add_argument("--save_every", type=int, default=1000, help="save every steps")
 parser.add_argument("--no_metrics", action='store_true', help="disable in-training LPIPS/PSNR/SSIM probe (saves snapshot PNGs only)")
 parser.add_argument("--n_eval_samples", type=int, default=1024, help="samples per in-training metrics probe; ignored if --no_metrics")
 
@@ -67,7 +68,7 @@ else:
     image_dataset = ImagesOnly(dataset)
 model_channels = args.channels #192
 train_num_steps = args.train_steps
-save_and_sample_every = min(500, int(train_num_steps//50))
+save_and_sample_every = args.save_every
 batch_size = args.batch_size
 lr = args.learning_rate 
 gated = args.gated
@@ -129,7 +130,7 @@ trainer = Trainer(model=b,
                 save_and_sample_every= save_and_sample_every,
                 results_folder=results_folder, 
                 warmup_fraction=0.05,
-                update_transport_steps=args.transport_steps,
+                update_transport_every=args.transport_steps,
                 callback_fn =save_image if args.no_metrics else save_image_and_metrics,
                 callback_kwargs={"dataset_name": args.dataset, "n_eval_samples": args.n_eval_samples},
         # mixed_precision_type = 'fp32',
