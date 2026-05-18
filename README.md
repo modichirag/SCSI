@@ -2,7 +2,7 @@
 
 Official implementation of **Generative Modeling from Black-box Corruptions via Self-Consistent Stochastic Interpolants** (Chirag Modi, Jiequn Han, Eric Vanden-Eijnden, Joan Bruna — ICLR 2026). [[link]](https://arxiv.org/abs/2512.10857)
 
-Research code for training generative models (stochastic interpolants) from **corrupted** observations — i.e. learning an generative model for clean-data distribution when only degraded samples are available. Corruptions include Gaussian noise, random/block masking, Gaussian/motion blur, JPEG compression, and random projections. Tested on CIFAR-10, MNIST, CelebA, SDSS DR16 quasar spectra (1-D), and the 2-D synthetic distribution.
+Research code for training generative models (stochastic interpolants) from **corrupted** observations — i.e. learning an generative model for clean-data distribution when only degraded samples are available. Corruptions include Gaussian noise, random/block masking, Gaussian/motion blur, and random projections. Tested on CIFAR-10, MNIST, and the 2-D synthetic distribution.
 
 ## Installation
 
@@ -60,8 +60,6 @@ To try a different forward model, swap the `--corruption` / `--corruption_levels
 | `gaussian_blur`        | `1.0 0.1`             | `(sigma_R, sigma_n)`                     |
 | `gaussian_blur_pnoise` | `1.0 0.1`             | `(sigma_R, lambda_n)` — Poisson rate     |
 | `random_motion`        | `5.0 0.1`             | `(kernel_size, sigma_n)`                 |
-
-`jpeg_compress` is RGB-only (uses YCbCr decomposition) and is skipped for MNIST; on CIFAR-10 it takes levels `(10, 100, 0.01)` = `(min_quality, max_quality, sigma_n)`.
 
 Outputs land under `./results/mnist/<corruption>/<levels>-test/`. `tests/test_image.py` runs a much smaller configuration as a wiring check.
 
