@@ -119,8 +119,15 @@ if s is not None:
 #b = torch.compile(b)
 
     
-# Setup interpolant
-corrupt_fn = partial(fwd_func, cond_y=args.cond_y, embed=args.embed)
+# Setup interpolant. Only attach `cond_y` / `embed` kwargs when the user
+# explicitly asked for them — most corruption `fwd()` closures don't
+# accept `embed=` and passing the default `False` still raises TypeError.
+_extra_kwargs = {}
+if args.cond_y:
+    _extra_kwargs["cond_y"] = True
+if args.embed:
+    _extra_kwargs["embed"] = True
+corrupt_fn = partial(fwd_func, **_extra_kwargs) if _extra_kwargs else fwd_func
 if args.combinedsde:
     interpolant = SCSInterpolantCombined(corrupt_fn , use_latents=use_latents, n_steps=args.ode_steps, \
                                                   gamma_scale=args.gamma_scale, sampler=args.sampler,

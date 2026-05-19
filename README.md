@@ -75,6 +75,12 @@ python -u scsi_image.py \
 
 CIFAR-10 downloads to `$SCSI_DATA` (default `./data/cifar10/`) on first call. Outputs go to `$SCSI_RESULTS/<dataset>/<corruption>/<run-slug>/` (with a `-mv` token appended to the slug when `--multiview` is passed).
 
+### Training-iteration choice
+
+`--train_steps 20000` is enough to reach paper-matching LPIPS, PSNR, and SSIM on every corruption we tested (random_mask, gaussian_blur, gaussian_blur + Poisson noise, random_motion). For tighter FID on `random_mask` and `random_motion` the paper trained 50,000 iterations — per-sample metrics plateau by 20k but the distributional metric continues to improve well past that point. For `gaussian_blur` and `gaussian_blur_pnoise`, 20000 is sufficient even for FID (paper trained these for 20000 too).
+
+For `gaussian_blur_pnoise` specifically, `--learning_rate 3e-4` (instead of the default 5e-4) is recommended — the Poisson noise channel's heavy-tailed gradients can destabilize training late in the schedule at the higher rate.
+
 Distributed (single-node, multi-GPU) training uses `torchrun`:
 
 ```bash
